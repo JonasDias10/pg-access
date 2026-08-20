@@ -1,0 +1,24 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+  - "examples/*"
+allowBuilds:
+  esbuild: true
+minimumReleaseAgeExclude:
+  - "@turbo/darwin-64@2.10.11"
+  - "@turbo/darwin-arm64@2.10.11"
+  - "@turbo/linux-64@2.10.11"
+  - "@turbo/linux-arm64@2.10.11"
+  - "@turbo/windows-64@2.10.11"
+  - "@turbo/windows-arm64@2.10.11"
+  - "@vitest/expect@4.1.11"
+  - "@vitest/mocker@4.1.11"
+  - "@vitest/pretty-format@4.1.11"
+  - "@vitest/runner@4.1.11"
+  - "@vitest/snapshot@4.1.11"
+  - "@vitest/spy@4.1.11"
+  - "@vitest/utils@4.1.11"
+  - turbo@2.10.11
+  - vitest@4.1.11
+  - "@changesets/cli@3.0.1"
+  - "@changesets/write@1.0.1"
