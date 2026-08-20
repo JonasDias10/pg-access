@@ -4,6 +4,8 @@
 
 alter table "projects" enable row level security;
 
+drop policy if exists "projects_select" on "projects";
+
 create policy "projects_select"
 on "projects"
 for select
@@ -12,6 +14,8 @@ using (
   "user_id" = (select auth.uid())
 );
 
+drop policy if exists "projects_insert" on "projects";
+
 create policy "projects_insert"
 on "projects"
 for insert
@@ -19,6 +23,8 @@ to "authenticated"
 with check (
   ((select auth.uid()) is not null and "user_id" = (select auth.uid()))
 );
+
+drop policy if exists "projects_update" on "projects";
 
 create policy "projects_update"
 on "projects"
@@ -30,6 +36,8 @@ using (
 with check (
   "user_id" = (select auth.uid())
 );
+
+drop policy if exists "projects_delete" on "projects";
 
 create policy "projects_delete"
 on "projects"
