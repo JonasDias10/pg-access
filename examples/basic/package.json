@@ -1,0 +1,22 @@
+{
+  "name": "@pg-access/example-basic",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Minimal end-to-end example: DSL -> AST -> PostgreSQL compiler -> migration file.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "generate": "tsx src/generate.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@pg-access/core": "workspace:*",
+    "@pg-access/postgres": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "tsx": "4.23.12",
+    "typescript": "6.0.3"
+  }
+}
