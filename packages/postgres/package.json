@@ -1,0 +1,38 @@
+{
+  "name": "@pg-access/postgres",
+  "version": "0.1.0",
+  "description": "Compiles @pg-access/core's AST into real PostgreSQL Row-Level Security SQL (CREATE POLICY, GRANT, migrations).",
+  "license": "MIT",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf build *.tsbuildinfo",
+    "test": "vitest run test/unit",
+    "test:integration": "vitest run test/integration --no-file-parallelism",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@pg-access/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "pg": "8.23.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}
