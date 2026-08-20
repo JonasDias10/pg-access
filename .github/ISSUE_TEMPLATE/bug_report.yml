@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in the DSL, compiler, or generated SQL isn't behaving correctly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security issue instead? Please use [SECURITY.md](../../SECURITY.md)'s
+        private reporting process rather than a public issue.
+
+  - type: textarea
+    id: config
+    attributes:
+      label: defineAuth config
+      description: A minimal `defineAuth({...})` that reproduces the problem.
+      render: ts
+    validations:
+      required: true
+
+  - type: textarea
+    id: generated-sql
+    attributes:
+      label: Generated SQL
+      description: The output of `compile(auth).sql` for the config above.
+      render: sql
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      description: Include the exact error message if there is one.
+    validations:
+      required: true
+
+  - type: input
+    id: pg-access-version
+    attributes:
+      label: "@pg-access/core / @pg-access/postgres version"
+    validations:
+      required: true
+
+  - type: input
+    id: postgres-version
+    attributes:
+      label: PostgreSQL version
+      description: Include Supabase, if that's your target (e.g. "PostgreSQL 17, Supabase").
+    validations:
+      required: true

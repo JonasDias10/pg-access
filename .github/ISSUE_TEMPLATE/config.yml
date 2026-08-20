@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/JonasDias10/pg-access/security/advisories/new
+    about: Please report vulnerabilities privately; see SECURITY.md. Do not open a public issue for these.

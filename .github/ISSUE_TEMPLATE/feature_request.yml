@@ -1,0 +1,39 @@
+name: Feature request
+description: A new expression, compiler capability, or other addition.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [roadmap](../../README.md#roadmap) first; it might
+        already be planned for an upcoming milestone.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to express that you can't today?
+      description: A concrete authorization rule, not just "support X".
+    validations:
+      required: true
+
+  - type: textarea
+    id: api
+    attributes:
+      label: What would the DSL look like?
+      description: Sketch the `defineAuth({...})` you'd want to write.
+      render: ts
+
+  - type: textarea
+    id: sql
+    attributes:
+      label: What SQL should that compile to, and why?
+      description: |
+        If this involves a non-obvious PostgreSQL mechanism (views, GRANT,
+        a specific operator), link the docs for it; this project avoids
+        inventing SQL behavior that isn't real.
+      render: sql
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
