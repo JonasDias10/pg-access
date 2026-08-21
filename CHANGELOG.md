@@ -17,6 +17,8 @@ All notable changes to this project will be documented in this file.
 - Identifier-length validation (rejects identifiers over PostgreSQL's 63-byte `NAMEDATALEN` limit instead of letting them silently truncate).
 - `examples/basic`: end-to-end example producing a runnable migration file.
 - `SECURITY.md` and Changesets scaffolding for future releases.
+- `@pg-access/cli`: `pg-access init` scaffolds a starter `pgaccess.config.ts`; `pg-access generate` locates and loads that config and writes a timestamped migration via `@pg-access/postgres`'s `generateMigration()`, replacing the hand-written script `examples/basic/src/generate.ts` used before; `pg-access check` connects to a live database and reports policies the config declares that aren't applied yet ("missing") or pg-access-managed policies that are applied but no longer declared ("orphaned"), read-only and exits non-zero on drift so it's usable as a CI gate.
+- `@pg-access/postgres`: `listManagedPolicies()` reads `pg_policies` for pg-access-named (`<table>_<operation>`) policies on a set of tables; `diffPolicies()` compares that against an `AuthNode` to compute the same missing/orphaned sets `check` reports.
 
 ### Fixed
 

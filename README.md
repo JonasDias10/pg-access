@@ -160,7 +160,7 @@ producing broken SQL.
 packages/
 ├── core/       DSL + AST. No SQL, no PostgreSQL, no Supabase.
 ├── postgres/   Compiles the AST into PostgreSQL DDL + migrations.
-├── cli/        (planned) pg-access init / generate / check
+├── cli/        pg-access init / generate / check (read-only drift detection).
 └── testing/    (planned) helpers for testing RLS against a real database
 ```
 
@@ -282,8 +282,12 @@ v1.0  stable API, documentation, Supabase adapter
 `and`/`or`/`not` composition and a from-scratch PostgreSQL integration test
 suite actually landed in this first milestone already, folded in early
 because they were needed to properly test `USING`/`WITH CHECK` and role
-derivation. The CLI, migration diffing, membership/RBAC expressions, and
-Column Access Control are still ahead.
+derivation. `@pg-access/cli` has landed too (see `packages/cli`), including
+a first, narrowly-scoped `pg-access check`: it detects policies applied to
+the database that are no longer in the config (or declared but not yet
+applied), by name only, read-only. Full `ALTER POLICY`-based diffing
+(instead of always drop+recreate), membership/RBAC expressions, and Column
+Access Control are still ahead.
 
 **Column Access Control is intentionally not attempted yet.** RLS filters
 rows, not columns. Solving per-column access correctly means real

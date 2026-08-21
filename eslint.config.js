@@ -5,7 +5,16 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["**/build/**", "**/node_modules/**", "**/.turbo/**", "**/coverage/**"],
+    // packages/cli/bin/pg-access.js is a deliberately plain, untyped
+    // Node entry shim (it just re-exports into the compiled build/ output),
+    // not part of the package's TypeScript project.
+    ignores: [
+      "**/build/**",
+      "**/node_modules/**",
+      "**/.turbo/**",
+      "**/coverage/**",
+      "packages/cli/bin/**",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

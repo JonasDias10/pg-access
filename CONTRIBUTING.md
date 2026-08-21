@@ -33,7 +33,7 @@ a sign the change needs to be restructured, not just reviewed harder.
 packages/
 ├── core/       DSL + AST. No SQL, no PostgreSQL, no Supabase.
 ├── postgres/   Compiles the AST into PostgreSQL DDL + migrations.
-├── cli/        (planned) not implemented yet
+├── cli/        `pg-access init` / `generate` / `check` (read-only drift detection).
 └── testing/    (planned) not implemented yet
 ```
 
@@ -78,8 +78,9 @@ pnpm build
    pnpm test:integration
    ```
 
-4. **Add a changeset** if your change touches `@pg-access/core` or
-   `@pg-access/postgres` and should land in a future release:
+4. **Add a changeset** if your change touches `@pg-access/core`,
+   `@pg-access/postgres`, or `@pg-access/cli` and should land in a future
+   release:
 
    ```bash
    pnpm changeset

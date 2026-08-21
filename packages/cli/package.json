@@ -1,0 +1,37 @@
+{
+  "name": "@pg-access/cli",
+  "version": "0.1.0",
+  "description": "Command-line interface for pg-access: generates PostgreSQL RLS migrations from a pgaccess.config file, and checks a live database for drift.",
+  "license": "MIT",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "pg-access": "./bin/pg-access.js"
+  },
+  "files": [
+    "build",
+    "bin"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf build *.tsbuildinfo",
+    "test": "vitest run test/unit",
+    "test:integration": "vitest run test/integration --no-file-parallelism",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@pg-access/core": "workspace:*",
+    "@pg-access/postgres": "workspace:*",
+    "jiti": "2.7.0",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "@types/pg": "8.23.1",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}
