@@ -34,7 +34,7 @@ packages/
 ├── core/       DSL + AST. No SQL, no PostgreSQL, no Supabase.
 ├── postgres/   Compiles the AST into PostgreSQL DDL + migrations.
 ├── cli/        `pg-access init` / `generate` / `check` (read-only drift detection).
-└── testing/    (planned) not implemented yet
+└── testing/    `asUser()` + `createSupabaseAuthStub()` for testing RLS
 ```
 
 See the README's [Architecture](README.md#architecture) section for why
