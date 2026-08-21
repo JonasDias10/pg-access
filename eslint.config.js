@@ -7,13 +7,18 @@ export default tseslint.config(
   {
     // packages/cli/bin/pg-access.js is a deliberately plain, untyped
     // Node entry shim (it just re-exports into the compiled build/ output),
-    // not part of the package's TypeScript project.
+    // not part of the package's TypeScript project. apps/docs/.vitepress/
+    // dist+cache and apps/docs/reference are generated (VitePress's build
+    // output and typedoc's markdown output), not source.
     ignores: [
       "**/build/**",
       "**/node_modules/**",
       "**/.turbo/**",
       "**/coverage/**",
       "packages/cli/bin/**",
+      "apps/docs/.vitepress/dist/**",
+      "apps/docs/.vitepress/cache/**",
+      "apps/docs/reference/**",
     ],
   },
   js.configs.recommended,

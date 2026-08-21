@@ -3,7 +3,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["build/**"]
+      "outputs": ["build/**", ".vitepress/dist/**", "reference/**"]
     },
     "test": {
       "dependsOn": ["^build"],

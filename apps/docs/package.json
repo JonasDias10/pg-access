@@ -1,0 +1,27 @@
+{
+  "name": "docs",
+  "private": true,
+  "version": "0.0.0",
+  "description": "pg-access documentation site.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vitepress dev .",
+    "docs:api": "typedoc",
+    "build": "pnpm docs:api && vitepress build .",
+    "preview": "vitepress preview .",
+    "clean": "rm -rf .vitepress/dist .vitepress/cache reference",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@pg-access/core": "workspace:*",
+    "@pg-access/postgres": "workspace:*",
+    "@pg-access/testing": "workspace:*",
+    "@types/node": "26.2.0",
+    "typedoc": "0.28.20",
+    "typedoc-plugin-markdown": "4.12.0",
+    "typescript": "6.0.3",
+    "vitepress": "1.6.4"
+  }
+}
