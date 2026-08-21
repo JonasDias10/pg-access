@@ -161,7 +161,7 @@ packages/
 ├── core/       DSL + AST. No SQL, no PostgreSQL, no Supabase.
 ├── postgres/   Compiles the AST into PostgreSQL DDL + migrations.
 ├── cli/        pg-access init / generate / check (read-only drift detection).
-└── testing/    (planned) helpers for testing RLS against a real database
+└── testing/    asUser() + createSupabaseAuthStub() for testing RLS against a real database
 ```
 
 **`@pg-access/core` never imports SQL or Supabase concepts.** `owner()`
@@ -288,8 +288,12 @@ policies applied to the database that are no longer in the config (or
 declared but not yet applied), by name only, read-only; `pg-access generate
 --database-url` closes the loop by including those drops in the next
 migration, still nothing executed against the database directly by the
-CLI. Full `ALTER POLICY`-based diffing (instead of always drop+recreate),
-membership/RBAC expressions, and Column Access Control are still ahead.
+CLI. `@pg-access/testing`'s `asUser()`/`createSupabaseAuthStub()` (see
+`packages/testing`) have landed too, packaging the role-switching/JWT-
+claims/rollback pattern the project's own integration tests use into a
+reusable API for testing a consumer's own schema. Full `ALTER POLICY`-based
+diffing (instead of always drop+recreate), membership/RBAC expressions,
+and Column Access Control are still ahead.
 
 **Column Access Control is intentionally not attempted yet.** RLS filters
 rows, not columns. Solving per-column access correctly means real

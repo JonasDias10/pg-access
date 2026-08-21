@@ -1,0 +1,43 @@
+{
+  "name": "@pg-access/testing",
+  "version": "0.1.0",
+  "description": "Helpers for testing PostgreSQL Row-Level Security policies against a real database: run a query as a given role/JWT claims, inside an auto-rolled-back transaction.",
+  "license": "MIT",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "clean": "rm -rf build *.tsbuildinfo",
+    "test": "vitest run test/unit",
+    "test:integration": "vitest run test/integration --no-file-parallelism",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@pg-access/postgres": "workspace:*"
+  },
+  "peerDependencies": {
+    "pg": ">=8"
+  },
+  "devDependencies": {
+    "@pg-access/core": "workspace:*",
+    "@types/node": "26.2.0",
+    "@types/pg": "8.23.1",
+    "pg": "8.23.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}
