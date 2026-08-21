@@ -3,6 +3,7 @@ build/
 *.tsbuildinfo
 .turbo/
 coverage/
+.tmp-*/
 .DS_Store
 *.log
 .env
