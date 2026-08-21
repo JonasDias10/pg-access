@@ -2,6 +2,10 @@
 
 **A type-safe, declarative way to define PostgreSQL Row-Level Security. It compiles down to real SQL, not a runtime layer.**
 
+A fuller guide, CLI/testing reference, and generated API docs live in
+[`apps/docs`](apps/docs) (run `pnpm --filter docs dev` to browse them
+locally); this README stays the quick tour.
+
 ```ts
 import { defineAuth, owner } from "@pg-access/core";
 
