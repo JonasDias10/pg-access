@@ -10,7 +10,7 @@ const HELP = `pg-access - generate PostgreSQL RLS migrations from a pgaccess.con
 
 Usage:
   pg-access init [--config <path>]
-  pg-access generate [--config <path>] [--out <dir>]
+  pg-access generate [--config <path>] [--out <dir>] [--database-url <url>]
   pg-access check [--config <path>] [--database-url <url>]
 
 Commands:
@@ -25,8 +25,10 @@ Options:
                          in the current directory)
   --out <dir>            Directory to write the migration into (generate
                          only, default: supabase/migrations)
-  --database-url <url>  Database to check against (check only, default:
-                         the DATABASE_URL environment variable)
+  --database-url <url>  Database to compare against (required for check;
+                         optional for generate, to also drop policies no
+                         longer in the config. Default: the DATABASE_URL
+                         environment variable)
   -h, --help             Show this help message
   -v, --version          Show the CLI version
 `;
@@ -104,7 +106,9 @@ export async function main(argv: readonly string[]): Promise<number> {
       if (result.orphaned.length > 0) {
         console.log("Orphaned (applied to the database, no longer in the config):");
         printPolicyList(result.orphaned);
-        console.log("Drop these manually once you're sure they're no longer needed:");
+        console.log(
+          "Run `pg-access generate --database-url <url>` to drop these in your next migration:",
+        );
         for (const policy of result.orphaned) {
           console.log(`  drop policy ${quoteIdent(policy.name)} on ${quoteIdent(policy.table)};`);
         }
@@ -117,8 +121,13 @@ export async function main(argv: readonly string[]): Promise<number> {
       cwd: process.cwd(),
       config: values.config,
       out: values.out,
+      databaseUrl: values["database-url"],
     });
     console.log(`Wrote ${path.relative(process.cwd(), result.filePath)}`);
+    if (result.droppedOrphans.length > 0) {
+      console.log("Also dropping policies no longer in the config:");
+      printPolicyList(result.droppedOrphans);
+    }
     return 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

@@ -7,6 +7,7 @@ export {
   compilePolicy,
   policyName,
   renderCreatePolicy,
+  renderDropPolicy,
   renderDropPolicyIfExists,
 } from "./compiler/policies.js";
 export type { CompiledPolicy } from "./compiler/policies.js";

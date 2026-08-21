@@ -53,6 +53,18 @@ export default defineAuth({ projects: { rows: { select: owner("user_id") } } });
     );
   });
 
+  it("returns an empty droppedOrphans list when no database is given", async () => {
+    await writeFile(
+      path.join(cwd, "pgaccess.config.ts"),
+      `import { defineAuth, owner } from "@pg-access/core";
+export default defineAuth({ projects: { rows: { select: owner("user_id") } } });`,
+    );
+
+    const result = await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
+
+    expect(result.droppedOrphans).toEqual([]);
+  });
+
   it("throws a clear error when no config file is found", async () => {
     await expect(runGenerate({ cwd })).rejects.toThrow(/No pgaccess config found/);
   });

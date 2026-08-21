@@ -21,9 +21,16 @@ function isAuthNode(value: unknown): value is AuthNode {
  * Loads a `pgaccess.config.*` file and returns its default export as an
  * `AuthNode`. Uses `jiti` so `.ts` configs run directly, without requiring
  * the caller's project to have its own TypeScript execution setup.
+ *
+ * `moduleCache: false` because jiti otherwise caches by resolved file path
+ * for the lifetime of the process: a single CLI invocation only ever loads
+ * a given config once, so this doesn't matter there, but any caller that
+ * loads the same path more than once (tests included) would otherwise
+ * silently get back a stale, previously-loaded config even after the file
+ * changed on disk.
  */
 export async function loadAuthConfig(configPath: string): Promise<AuthNode> {
-  const jiti = createJiti(import.meta.url, { interopDefault: true });
+  const jiti = createJiti(import.meta.url, { interopDefault: true, moduleCache: false });
   const exported = await jiti.import(configPath, { default: true });
 
   if (!isAuthNode(exported)) {
