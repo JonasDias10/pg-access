@@ -7,6 +7,10 @@ export default defineConfig({
   cleanUrls: true,
   srcDir: ".",
   srcExclude: ["README.md"],
+  // This is a GitHub Pages *project* site (github.com/JonasDias10/pg-access),
+  // served at jonasdias10.github.io/pg-access/, not at the domain root; every
+  // asset/link breaks in production without this matching that subpath.
+  base: "/pg-access/",
 
   themeConfig: {
     nav: [
