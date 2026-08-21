@@ -283,11 +283,13 @@ v1.0  stable API, documentation, Supabase adapter
 suite actually landed in this first milestone already, folded in early
 because they were needed to properly test `USING`/`WITH CHECK` and role
 derivation. `@pg-access/cli` has landed too (see `packages/cli`), including
-a first, narrowly-scoped `pg-access check`: it detects policies applied to
-the database that are no longer in the config (or declared but not yet
-applied), by name only, read-only. Full `ALTER POLICY`-based diffing
-(instead of always drop+recreate), membership/RBAC expressions, and Column
-Access Control are still ahead.
+a first, narrowly-scoped drift detection story: `pg-access check` detects
+policies applied to the database that are no longer in the config (or
+declared but not yet applied), by name only, read-only; `pg-access generate
+--database-url` closes the loop by including those drops in the next
+migration, still nothing executed against the database directly by the
+CLI. Full `ALTER POLICY`-based diffing (instead of always drop+recreate),
+membership/RBAC expressions, and Column Access Control are still ahead.
 
 **Column Access Control is intentionally not attempted yet.** RLS filters
 rows, not columns. Solving per-column access correctly means real
