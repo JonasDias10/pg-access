@@ -46,7 +46,10 @@ const HEADER = [
  * function only decides the file name and content.
  */
 export function generateMigration(auth: AuthNode, options: MigrationOptions = {}): Migration {
-  const { sql } = compile(auth, { dialect: options.dialect });
+  const { sql } = compile(auth, {
+    dialect: options.dialect,
+    existingPolicies: options.existingPolicies,
+  });
   const date = options.now ?? new Date();
 
   return {

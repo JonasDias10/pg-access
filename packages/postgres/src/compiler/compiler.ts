@@ -1,11 +1,28 @@
 import type { AuthNode } from "@pg-access/core";
 import type { Dialect } from "../dialect/postgres.js";
 import { postgresDialect } from "../dialect/postgres.js";
+import { diffPolicies } from "../diff/diff-policies.js";
+import type { ManagedPolicy } from "../introspect/list-managed-policies.js";
 import { quoteIdent } from "./identifiers.js";
-import { compilePolicy, renderCreatePolicy, renderDropPolicyIfExists } from "./policies.js";
+import {
+  compilePolicy,
+  renderCreatePolicy,
+  renderDropPolicy,
+  renderDropPolicyIfExists,
+} from "./policies.js";
 
 export interface CompileOptions {
   readonly dialect?: Dialect;
+  /**
+   * Policies already applied to the target database (from
+   * `listManagedPolicies()`). When given, `compile()` also emits
+   * `drop policy if exists` for any of these no longer declared in `auth` -
+   * closing the gap where a row policy removed from the config entirely
+   * would otherwise stay orphaned forever, since without knowing what's
+   * already applied, `compile()` has nothing in `auth` telling it the
+   * policy used to exist.
+   */
+  readonly existingPolicies?: readonly ManagedPolicy[];
 }
 
 export interface CompileResult {
@@ -29,10 +46,9 @@ export interface CompileResult {
  * Each policy is preceded by a `drop policy if exists` for its own name, so
  * regenerating a migration after changing a policy's expression is safe to
  * apply on top of a database that already has the previous version, not
- * just on a fresh one. This does not handle a row policy being removed
- * from the config entirely; that leaves the previously-applied policy in
- * place, since there is nothing in the new AuthNode telling the compiler
- * it used to exist.
+ * just on a fresh one. This does not by itself handle a row policy being
+ * removed from the config entirely; pass `existingPolicies` to also drop
+ * those (see `CompileOptions`).
  */
 export function compile(auth: AuthNode, options: CompileOptions = {}): CompileResult {
   const dialect = options.dialect ?? postgresDialect;
@@ -49,6 +65,13 @@ export function compile(auth: AuthNode, options: CompileOptions = {}): CompileRe
       const compiled = compilePolicy(table.name, rowPolicy, dialect);
       statements.push(renderDropPolicyIfExists(compiled));
       statements.push(renderCreatePolicy(compiled));
+    }
+  }
+
+  if (options.existingPolicies !== undefined) {
+    const { orphaned } = diffPolicies(auth, options.existingPolicies);
+    for (const policy of orphaned) {
+      statements.push(renderDropPolicy(policy));
     }
   }
 

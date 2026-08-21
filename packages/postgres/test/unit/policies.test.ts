@@ -4,6 +4,7 @@ import {
   compilePolicy,
   policyName,
   renderCreatePolicy,
+  renderDropPolicy,
   renderDropPolicyIfExists,
 } from "../../src/compiler/policies.js";
 import { postgresDialect } from "../../src/dialect/postgres.js";
@@ -104,6 +105,20 @@ describe("renderDropPolicyIfExists", () => {
 
     expect(renderDropPolicyIfExists(compiled)).toBe(
       'drop policy if exists "weird""table_delete" on "weird""table";',
+    );
+  });
+});
+
+describe("renderDropPolicy", () => {
+  it("renders a DROP POLICY IF EXISTS from just a table/name pair", () => {
+    expect(renderDropPolicy({ table: "projects", name: "projects_delete" })).toBe(
+      'drop policy if exists "projects_delete" on "projects";',
+    );
+  });
+
+  it("escapes table and policy names that need quoting", () => {
+    expect(renderDropPolicy({ table: 'weird"table', name: 'weird"policy' })).toBe(
+      'drop policy if exists "weird""policy" on "weird""table";',
     );
   });
 });

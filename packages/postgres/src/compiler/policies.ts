@@ -83,6 +83,19 @@ export function compilePolicy(
 }
 
 /**
+ * Takes just the name/table a policy needs to be dropped, not a full
+ * `CompiledPolicy` - also used to drop orphaned policies `compile()` never
+ * computed a `CompiledPolicy` for in the first place (see its
+ * `existingPolicies` option).
+ */
+export function renderDropPolicy(policy: {
+  readonly table: string;
+  readonly name: string;
+}): string {
+  return `drop policy if exists ${quoteIdent(policy.name)} on ${quoteIdent(policy.table)};`;
+}
+
+/**
  * `CREATE POLICY` errors if a policy with the same name already exists on
  * the table, it does not replace it. Since `policyName()` is deterministic
  * (`<table>_<operation>`), regenerating a migration after only changing a
@@ -93,7 +106,7 @@ export function compilePolicy(
  * has an older version of the same policy (it gets replaced).
  */
 export function renderDropPolicyIfExists(policy: CompiledPolicy): string {
-  return `drop policy if exists ${quoteIdent(policy.name)} on ${quoteIdent(policy.table)};`;
+  return renderDropPolicy(policy);
 }
 
 export function renderCreatePolicy(policy: CompiledPolicy): string {

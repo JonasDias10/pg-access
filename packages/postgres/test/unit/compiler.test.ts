@@ -1,6 +1,7 @@
 import { defineAuth, owner } from "@pg-access/core";
 import { describe, expect, it } from "vitest";
 import { compile } from "../../src/compiler/compiler.js";
+import type { ManagedPolicy } from "../../src/introspect/list-managed-policies.js";
 
 describe("compile", () => {
   it("compiles the canonical owner() example to a real CREATE POLICY statement", () => {
@@ -91,6 +92,41 @@ describe("compile", () => {
       'drop policy if exists "projects_insert" on "projects";',
       expect.stringContaining('create policy "projects_insert"'),
     ]);
+  });
+
+  it("without existingPolicies, leaves a policy removed from the config untouched", () => {
+    // The documented gap this option exists to close: without it, compile()
+    // has no way to know a policy used to exist at all.
+    const auth = defineAuth({ projects: { rows: { select: owner("user_id") } } });
+    const result = compile(auth);
+    expect(result.sql).not.toContain("projects_delete");
+  });
+
+  it("with existingPolicies, drops a managed policy no longer declared in the config", () => {
+    const auth = defineAuth({ projects: { rows: { select: owner("user_id") } } });
+    const existingPolicies: ManagedPolicy[] = [
+      { table: "projects", operation: "select", name: "projects_select" },
+      { table: "projects", operation: "delete", name: "projects_delete" },
+    ];
+
+    const result = compile(auth, { existingPolicies });
+
+    expect(result.statements).toContain('drop policy if exists "projects_delete" on "projects";');
+    // projects_select is still declared, so it goes through the normal
+    // drop-then-recreate path, not the orphan path - it shouldn't also be
+    // dropped a second time as if it were orphaned.
+    expect(result.statements.filter((s) => s.includes("projects_select"))).toHaveLength(2);
+  });
+
+  it("with existingPolicies, drops every managed policy for a table whose rows became empty", () => {
+    const auth = defineAuth({ projects: {} });
+    const existingPolicies: ManagedPolicy[] = [
+      { table: "projects", operation: "select", name: "projects_select" },
+    ];
+
+    const result = compile(auth, { existingPolicies });
+
+    expect(result.statements).toEqual(['drop policy if exists "projects_select" on "projects";']);
   });
 
   it("compile() is public and defensively rejects a hand-built, unvalidated AuthNode", () => {
