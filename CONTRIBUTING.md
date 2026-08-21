@@ -67,6 +67,15 @@ pnpm build
    pnpm --filter @pg-access/postgres test:integration
    ```
 
+   `pnpm test:integration` at the repo root runs every package's
+   integration suite against that same database, one package at a time
+   (`turbo run test:integration --concurrency=1`). This is required, not
+   just slower-but-safe: several suites create the real, global `auth`
+   schema and `authenticated` role Supabase itself uses (not a
+   per-test-scoped name), so two packages' suites touching them at the
+   same time race on `CREATE SCHEMA`/`CREATE ROLE`/`DROP ROLE` and fail
+   with spurious errors that have nothing to do with the code under test.
+
 3. **Run the full check suite before opening a PR:**
 
    ```bash
