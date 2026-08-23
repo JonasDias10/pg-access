@@ -1,4 +1,7 @@
-![pg-access](pg-access.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="pg-access-dark.png">
+  <img src="pg-access.png" alt="pg-access">
+</picture>
 
 **A type-safe, declarative way to define PostgreSQL Row-Level Security. It compiles down to real SQL, not a runtime layer.**
 
@@ -121,7 +124,10 @@ pnpm install
 pnpm --filter @pg-access/example-basic generate
 ```
 
-See [examples/basic](examples/basic).
+See [examples/basic](examples/basic), or [examples/supabase](examples/supabase)
+for the same pipeline against a real local Supabase project, with a small
+Fastify API and integration tests proving the generated policies hold up
+against real signed-in users.
 
 ## The DSL
 

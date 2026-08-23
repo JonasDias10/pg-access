@@ -5,9 +5,21 @@ integration test suite already uses (spin up a real database, run as a
 given role/JWT claims, assert row visibility) into a reusable API for
 testing your own schema.
 
-```bash
+::: code-group
+
+```bash [pnpm]
 pnpm add -D @pg-access/testing
 ```
+
+```bash [npm]
+npm install -D @pg-access/testing
+```
+
+```bash [yarn]
+yarn add -D @pg-access/testing
+```
+
+:::
 
 ## `asUser`
 

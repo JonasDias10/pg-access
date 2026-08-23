@@ -3,9 +3,21 @@
 `@pg-access/cli` is a thin wrapper around `@pg-access/postgres`; no
 compiler or diffing logic lives in it.
 
-```bash
+::: code-group
+
+```bash [pnpm]
 pnpm add -D @pg-access/cli
 ```
+
+```bash [npm]
+npm install -D @pg-access/cli
+```
+
+```bash [yarn]
+yarn add -D @pg-access/cli
+```
+
+:::
 
 ## `init`
 

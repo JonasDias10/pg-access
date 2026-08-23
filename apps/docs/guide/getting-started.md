@@ -2,9 +2,21 @@
 
 ## Install
 
-```bash
+::: code-group
+
+```bash [pnpm]
 pnpm add @pg-access/core @pg-access/postgres
 ```
+
+```bash [npm]
+npm install @pg-access/core @pg-access/postgres
+```
+
+```bash [yarn]
+yarn add @pg-access/core @pg-access/postgres
+```
+
+:::
 
 `@pg-access/core` is the DSL: it builds a plain AST, no SQL, no PostgreSQL,
 no Supabase. `@pg-access/postgres` compiles that AST into real PostgreSQL
@@ -40,8 +52,23 @@ producing broken SQL.
 Writing the compiled SQL to a timestamped migration file by hand is what
 [`@pg-access/cli`](/cli/) is for:
 
-```bash
+::: code-group
+
+```bash [pnpm]
 pnpm add -D @pg-access/cli
+```
+
+```bash [npm]
+npm install -D @pg-access/cli
+```
+
+```bash [yarn]
+yarn add -D @pg-access/cli
+```
+
+:::
+
+```bash
 npx pg-access init      # scaffolds pgaccess.config.ts
 npx pg-access generate  # writes supabase/migrations/<timestamp>_pg_access.sql
 ```
