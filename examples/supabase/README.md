@@ -78,7 +78,10 @@ every route. `POST /signup` returns an `accessToken`; paste it into the
 as a Bearer token, so you can exercise the RLS-scoped routes from the
 browser without writing a client.
 
-or run the tests against the same live database instead:
+or run the tests against the same live database instead (needs `supabase
+start` running locally; this example is excluded from `pnpm test:integration`
+at the repo root since CI only provisions a plain Postgres server, not a
+full Supabase stack):
 
 ```bash
 pnpm --filter @pg-access/example-supabase test:integration
