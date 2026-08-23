@@ -124,7 +124,10 @@ pnpm install
 pnpm --filter @pg-access/example-basic generate
 ```
 
-See [examples/basic](examples/basic).
+See [examples/basic](examples/basic), or [examples/supabase](examples/supabase)
+for the same pipeline against a real local Supabase project, with a small
+Fastify API and integration tests proving the generated policies hold up
+against real signed-in users.
 
 ## The DSL
 
