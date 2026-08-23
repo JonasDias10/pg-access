@@ -1,4 +1,7 @@
-![pg-access](pg-access.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="pg-access-dark.png">
+  <img src="pg-access.png" alt="pg-access">
+</picture>
 
 **A type-safe, declarative way to define PostgreSQL Row-Level Security. It compiles down to real SQL, not a runtime layer.**
 

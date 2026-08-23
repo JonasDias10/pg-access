@@ -2,4 +2,6 @@
 
 Will show Column Access Control (`columns: { ... }`) once it's implemented
 on top of PostgreSQL column privileges and views. RLS alone cannot express
-per-column rules. See the root README's "Column Access Control" section.
+per-column rules. See the open
+["Column Access Control via triggers" issue](https://github.com/JonasDias10/pg-access/issues/4)
+on GitHub.
