@@ -5,6 +5,10 @@ hero:
   name: pg-access
   text: Type-safe PostgreSQL Row-Level Security
   tagline: A declarative TypeScript DSL that compiles to real SQL. No runtime layer, no query interception; PostgreSQL enforces it.
+  image:
+    light: /pg-access-icon.png
+    dark: /pg-access-icon-dark.png
+    alt: pg-access
   actions:
     - theme: brand
       text: Get started

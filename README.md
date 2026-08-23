@@ -1,4 +1,4 @@
-# pg-access
+![pg-access](pg-access.png)
 
 **A type-safe, declarative way to define PostgreSQL Row-Level Security. It compiles down to real SQL, not a runtime layer.**
 
@@ -270,41 +270,6 @@ Consequences of that design worth being explicit about:
   across PostgreSQL 13 through 17 in CI. See the integration test suite,
   which runs the compiled policies as a genuinely non-superuser, non-owner
   Postgres role and checks actual row visibility and write rejection.
-
-## Roadmap
-
-```text
-v0.1  DSL, AST, owner/authenticated/public/role, select/insert/update/delete, PostgreSQL compiler   (this milestone)
-v0.2  and/or/not composition, better validation, CLI
-v0.3  migrations, diff, check
-v0.4  membership, tenant, RBAC
-v0.5  Column Access Control
-v0.6  PostgreSQL integration tests, testing package
-v1.0  stable API, documentation, Supabase adapter
-```
-
-`and`/`or`/`not` composition and a from-scratch PostgreSQL integration test
-suite actually landed in this first milestone already, folded in early
-because they were needed to properly test `USING`/`WITH CHECK` and role
-derivation. `@pg-access/cli` has landed too (see `packages/cli`), including
-a first, narrowly-scoped drift detection story: `pg-access check` detects
-policies applied to the database that are no longer in the config (or
-declared but not yet applied), by name only, read-only; `pg-access generate
---database-url` closes the loop by including those drops in the next
-migration, still nothing executed against the database directly by the
-CLI. `@pg-access/testing`'s `asUser()`/`createSupabaseAuthStub()` (see
-`packages/testing`) have landed too, packaging the role-switching/JWT-
-claims/rollback pattern the project's own integration tests use into a
-reusable API for testing a consumer's own schema. Full `ALTER POLICY`-based
-diffing (instead of always drop+recreate), membership/RBAC expressions,
-and Column Access Control are still ahead.
-
-**Column Access Control is intentionally not attempted yet.** RLS filters
-rows, not columns. Solving per-column access correctly means real
-PostgreSQL mechanisms, such as column privileges, `GRANT`/`REVOKE`, and
-views (including `security_barrier` where needed), combined carefully with
-RLS, not a fake TypeScript-side filter that would only be cosmetic. That
-gets designed once the row-level compiler here has proven itself.
 
 ## Contributing
 

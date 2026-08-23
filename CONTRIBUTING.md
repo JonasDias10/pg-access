@@ -1,9 +1,9 @@
 # Contributing to pg-access
 
 Thanks for taking the time to contribute. This is an early-stage project
-(v0.1), so expect the API and internals to keep moving; check the
-[roadmap in the README](README.md#roadmap) before starting anything large,
-so we don't duplicate effort.
+(v0.1), so expect the API and internals to keep moving; check the [open
+issues](https://github.com/JonasDias10/pg-access/issues) before starting
+anything large, so we don't duplicate effort.
 
 Found a security issue instead of a regular bug? See
 [SECURITY.md](SECURITY.md); please don't open a public issue for those.

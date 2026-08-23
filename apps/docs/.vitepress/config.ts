@@ -1,5 +1,12 @@
 import { defineConfig } from "vitepress";
 
+// This is a GitHub Pages *project* site (github.com/JonasDias10/pg-access),
+// served at jonasdias10.github.io/pg-access/, not at the domain root; every
+// asset/link breaks in production without this matching that subpath. Raw
+// `head` tags aren't base-rewritten by VitePress the way themeConfig image
+// paths are, so the favicon href below prepends it manually.
+const base = "/pg-access/";
+
 export default defineConfig({
   title: "pg-access",
   description:
@@ -7,18 +14,25 @@ export default defineConfig({
   cleanUrls: true,
   srcDir: ".",
   srcExclude: ["README.md"],
-  // This is a GitHub Pages *project* site (github.com/JonasDias10/pg-access),
-  // served at jonasdias10.github.io/pg-access/, not at the domain root; every
-  // asset/link breaks in production without this matching that subpath.
-  base: "/pg-access/",
+  base,
+  head: [
+    ["link", { rel: "icon", type: "image/png", href: `${base}favicon.png` }],
+    [
+      "meta",
+      { property: "og:image", content: "https://jonasdias10.github.io/pg-access/pg-access.png" },
+    ],
+    ["meta", { name: "twitter:card", content: "summary_large_image" }],
+  ],
 
   themeConfig: {
+    logo: { light: "/pg-access-icon.png", dark: "/pg-access-icon-dark.png", alt: "pg-access" },
+    siteTitle: false,
+
     nav: [
       { text: "Guide", link: "/guide/getting-started" },
       { text: "CLI", link: "/cli/" },
       { text: "Testing", link: "/testing/" },
       { text: "Reference", link: "/reference/" },
-      { text: "Roadmap", link: "/roadmap" },
     ],
 
     sidebar: [
@@ -43,10 +57,6 @@ export default defineConfig({
       {
         text: "Reference",
         items: [{ text: "API reference", link: "/reference/" }],
-      },
-      {
-        text: "Project",
-        items: [{ text: "Roadmap", link: "/roadmap" }],
       },
     ],
 
