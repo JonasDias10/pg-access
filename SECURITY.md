@@ -42,5 +42,5 @@ made such a mistake easy to make.
 
 This is a young, unfunded open-source project maintained on a best-effort
 basis; there's no SLA. Confirmed vulnerabilities are prioritized above
-everything else in the roadmap, and a fix, an advisory, and a new release
-are the goal before any public disclosure.
+all other open work, and a fix, an advisory, and a new release are the
+goal before any public disclosure.

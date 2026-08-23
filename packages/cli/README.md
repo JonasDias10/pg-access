@@ -78,5 +78,5 @@ Orphan detection (both `check` and `generate --database-url`) only ever
 covers tables still declared in the config; a table removed from the
 config entirely isn't visible to it yet (see `diffPolicies()`'s own docs in
 `@pg-access/postgres` for why). Full `ALTER POLICY`-based diffing (rather
-than always drop+recreate) is also still ahead; see the root README's
-roadmap.
+than always drop+recreate) is also still ahead; see the open issues on
+GitHub.

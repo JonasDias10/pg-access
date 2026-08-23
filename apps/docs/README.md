@@ -35,7 +35,6 @@ apps/docs/
 ├── guide/               Getting started, the DSL, architecture, security
 ├── cli/                 @pg-access/cli usage
 ├── testing/              @pg-access/testing usage
-├── roadmap.md            Project roadmap + contributing
 ├── reference/            Generated API reference (gitignored)
 └── .vitepress/config.ts  Site config, nav, sidebar
 ```
