@@ -3,7 +3,30 @@
   "version": "0.1.0",
   "description": "Type-safe DSL and AST for declaring PostgreSQL authorization policies. Framework-agnostic, produces no SQL.",
   "license": "MIT",
+  "author": "pg-access contributors",
+  "homepage": "https://github.com/JonasDias10/pg-access/tree/main/packages/core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonasDias10/pg-access.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/JonasDias10/pg-access/issues"
+  },
+  "keywords": [
+    "postgres",
+    "postgresql",
+    "rls",
+    "row-level-security",
+    "authorization",
+    "policy",
+    "supabase",
+    "dsl"
+  ],
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -16,10 +39,14 @@
     }
   },
   "files": [
-    "build"
+    "build",
+    "src",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "prepack": "pnpm build",
     "clean": "rm -rf build *.tsbuildinfo",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",

@@ -3,7 +3,31 @@
   "version": "0.1.0",
   "description": "Compiles @pg-access/core's AST into real PostgreSQL Row-Level Security SQL (CREATE POLICY, GRANT, migrations).",
   "license": "MIT",
+  "author": "pg-access contributors",
+  "homepage": "https://github.com/JonasDias10/pg-access/tree/main/packages/postgres#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonasDias10/pg-access.git",
+    "directory": "packages/postgres"
+  },
+  "bugs": {
+    "url": "https://github.com/JonasDias10/pg-access/issues"
+  },
+  "keywords": [
+    "postgres",
+    "postgresql",
+    "rls",
+    "row-level-security",
+    "authorization",
+    "policy",
+    "migration",
+    "supabase",
+    "sql"
+  ],
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "publishConfig": {
     "access": "public"
   },
@@ -16,10 +40,14 @@
     }
   },
   "files": [
-    "build"
+    "build",
+    "src",
+    "LICENSE",
+    "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "prepack": "pnpm build",
     "clean": "rm -rf build *.tsbuildinfo",
     "test": "vitest run test/unit",
     "test:integration": "vitest run test/integration --no-file-parallelism",
