@@ -5,6 +5,11 @@
 
 **A type-safe, declarative way to define PostgreSQL Row-Level Security. It compiles down to real SQL, not a runtime layer.**
 
+[![CI](https://github.com/JonasDias10/pg-access/actions/workflows/ci.yml/badge.svg)](https://github.com/JonasDias10/pg-access/actions/workflows/ci.yml)
+[![@pg-access/core](https://img.shields.io/npm/v/@pg-access/core?label=%40pg-access%2Fcore)](https://www.npmjs.com/package/@pg-access/core)
+[![@pg-access/cli](https://img.shields.io/npm/v/@pg-access/cli?label=%40pg-access%2Fcli)](https://www.npmjs.com/package/@pg-access/cli)
+[![license](https://img.shields.io/npm/l/@pg-access/core)](LICENSE)
+
 A fuller guide, CLI/testing reference, and generated API docs live in
 [`apps/docs`](apps/docs) (run `pnpm --filter docs dev` to browse them
 locally); this README stays the quick tour.

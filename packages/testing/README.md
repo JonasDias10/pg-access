@@ -1,5 +1,9 @@
 # @pg-access/testing
 
+[![npm](https://img.shields.io/npm/v/@pg-access/testing)](https://www.npmjs.com/package/@pg-access/testing)
+[![downloads](https://img.shields.io/npm/dm/@pg-access/testing)](https://www.npmjs.com/package/@pg-access/testing)
+[![license](https://img.shields.io/npm/l/@pg-access/testing)](https://github.com/JonasDias10/pg-access/blob/main/LICENSE)
+
 Helpers for testing PostgreSQL Row-Level Security policies against a real
 database, extracted from the pattern `@pg-access/postgres`'s own
 integration test suite uses (`packages/postgres/test/integration`): switch
