@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   compilePolicy,
   policyName,
+  renderAlterPolicy,
   renderCreatePolicy,
   renderDropPolicy,
   renderDropPolicyIfExists,
@@ -161,5 +162,45 @@ describe("renderCreatePolicy", () => {
       postgresDialect,
     );
     expect(renderCreatePolicy(compiled)).toContain("to public");
+  });
+});
+
+describe("renderAlterPolicy", () => {
+  it("changes TO and USING in place, without dropping the policy", () => {
+    const compiled = compilePolicy(
+      "projects",
+      { type: "rowPolicy", operation: "select", expression: owner("user_id") },
+      postgresDialect,
+    );
+
+    expect(renderAlterPolicy(compiled)).toBe(
+      [
+        'alter policy "projects_select"',
+        'on "projects"',
+        'to "authenticated"',
+        'using (\n  "user_id" = (select auth.uid())\n)',
+      ].join("\n") + ";",
+    );
+  });
+
+  it("emits WITH CHECK but no USING for an INSERT policy", () => {
+    const compiled = compilePolicy(
+      "projects",
+      { type: "rowPolicy", operation: "insert", expression: owner("user_id") },
+      postgresDialect,
+    );
+    const sql = renderAlterPolicy(compiled);
+
+    expect(sql).toContain("with check (");
+    expect(sql).not.toContain("using (");
+  });
+
+  it("never emits `for <operation>`, which ALTER POLICY cannot change", () => {
+    const compiled = compilePolicy(
+      "projects",
+      { type: "rowPolicy", operation: "update", expression: owner("user_id") },
+      postgresDialect,
+    );
+    expect(renderAlterPolicy(compiled)).not.toContain("for update");
   });
 });

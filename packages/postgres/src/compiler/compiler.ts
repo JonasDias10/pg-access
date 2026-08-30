@@ -49,6 +49,12 @@ export interface CompileResult {
  * just on a fresh one. This does not by itself handle a row policy being
  * removed from the config entirely; pass `existingPolicies` to also drop
  * those (see `CompileOptions`).
+ *
+ * `compile()` is given no database, so it drops and recreates every policy
+ * unconditionally, even unchanged ones. When a connection is available,
+ * `planPolicyChanges()` diffs against the live database instead and emits
+ * `ALTER POLICY` for what drifted, `CREATE` for what's missing, and nothing
+ * for policies that already match.
  */
 export function compile(auth: AuthNode, options: CompileOptions = {}): CompileResult {
   const dialect = options.dialect ?? postgresDialect;

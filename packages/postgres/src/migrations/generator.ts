@@ -41,6 +41,19 @@ const HEADER = [
 ].join("\n");
 
 /**
+ * Names and headers a migration file from already-built SQL. Use this with
+ * `planPolicyChanges()`'s `sql` when reconciling against a live database;
+ * `generateMigration()` is the shortcut for the database-free `compile()`
+ * path. Writing the file to disk is the caller's job.
+ */
+export function toMigrationFile(sql: string, now: Date = new Date()): Migration {
+  return {
+    fileName: `${migrationTimestamp(now)}_pg_access.sql`,
+    sql: sql.length > 0 ? HEADER + sql : HEADER,
+  };
+}
+
+/**
  * Wraps `compile()`'s output as a named, timestamped migration file body.
  * Writing the file to disk is the caller's job (e.g. the future CLI). This
  * function only decides the file name and content.
@@ -50,10 +63,6 @@ export function generateMigration(auth: AuthNode, options: MigrationOptions = {}
     dialect: options.dialect,
     existingPolicies: options.existingPolicies,
   });
-  const date = options.now ?? new Date();
 
-  return {
-    fileName: `${migrationTimestamp(date)}_pg_access.sql`,
-    sql: sql.length > 0 ? HEADER + sql : HEADER,
-  };
+  return toMigrationFile(sql, options.now ?? new Date());
 }

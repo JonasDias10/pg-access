@@ -1,7 +1,19 @@
+import type { Operation } from "@pg-access/core";
 import { defineAuth, owner } from "@pg-access/core";
 import { describe, expect, it } from "vitest";
 import { compile } from "../../src/compiler/compiler.js";
 import type { ManagedPolicy } from "../../src/introspect/list-managed-policies.js";
+
+function managed(table: string, operation: Operation): ManagedPolicy {
+  return {
+    table,
+    operation,
+    name: `${table}_${operation}`,
+    using: null,
+    withCheck: null,
+    roles: [],
+  };
+}
 
 describe("compile", () => {
   it("compiles the canonical owner() example to a real CREATE POLICY statement", () => {
@@ -105,8 +117,8 @@ describe("compile", () => {
   it("with existingPolicies, drops a managed policy no longer declared in the config", () => {
     const auth = defineAuth({ projects: { rows: { select: owner("user_id") } } });
     const existingPolicies: ManagedPolicy[] = [
-      { table: "projects", operation: "select", name: "projects_select" },
-      { table: "projects", operation: "delete", name: "projects_delete" },
+      managed("projects", "select"),
+      managed("projects", "delete"),
     ];
 
     const result = compile(auth, { existingPolicies });
@@ -120,9 +132,7 @@ describe("compile", () => {
 
   it("with existingPolicies, drops every managed policy for a table whose rows became empty", () => {
     const auth = defineAuth({ projects: {} });
-    const existingPolicies: ManagedPolicy[] = [
-      { table: "projects", operation: "select", name: "projects_select" },
-    ];
+    const existingPolicies: ManagedPolicy[] = [managed("projects", "select")];
 
     const result = compile(auth, { existingPolicies });
 
