@@ -126,3 +126,26 @@ export function renderCreatePolicy(policy: CompiledPolicy): string {
 
   return lines.join("\n") + ";";
 }
+
+/**
+ * `ALTER POLICY` changes `TO` / `USING` / `WITH CHECK` in place, without
+ * dropping the policy. It cannot change the command (`for select` etc.),
+ * but `policyName()` ties each name to one fixed command forever, so a
+ * still-declared `(table, operation)` pair never needs that. Used by
+ * `planPolicyChanges()` for a policy whose compiled definition drifted
+ * from what's applied, instead of the drop-then-recreate `compile()` does
+ * when it has no database to diff against.
+ */
+export function renderAlterPolicy(policy: CompiledPolicy): string {
+  const lines = [`alter policy ${quoteIdent(policy.name)}`, `on ${quoteIdent(policy.table)}`];
+
+  lines.push(`to ${quoteRole(policy.role)}`);
+  if (policy.using !== null) {
+    lines.push(`using (\n  ${policy.using}\n)`);
+  }
+  if (policy.withCheck !== null) {
+    lines.push(`with check (\n  ${policy.withCheck}\n)`);
+  }
+
+  return lines.join("\n") + ";";
+}

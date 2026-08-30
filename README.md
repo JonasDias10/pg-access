@@ -127,7 +127,8 @@ pnpm --filter @pg-access/example-basic generate
 See [examples/basic](examples/basic), or [examples/supabase](examples/supabase)
 for the same pipeline against a real local Supabase project, with a small
 Fastify API and integration tests proving the generated policies hold up
-against real signed-in users.
+against real signed-in users, plus `pg-access check` / `generate
+--database-url` diffing a changed config against the running database.
 
 ## The DSL
 

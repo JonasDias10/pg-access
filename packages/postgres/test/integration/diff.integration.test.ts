@@ -84,8 +84,16 @@ describe("listManagedPolicies + diffPolicies against real PostgreSQL", () => {
     const managed = await listManagedPolicies(pool, ["policy_diff_target"]);
     expect(managed).toEqual(
       expect.arrayContaining([
-        { table: "policy_diff_target", operation: "select", name: "policy_diff_target_select" },
-        { table: "policy_diff_target", operation: "delete", name: "policy_diff_target_delete" },
+        expect.objectContaining({
+          table: "policy_diff_target",
+          operation: "select",
+          name: "policy_diff_target_select",
+        }),
+        expect.objectContaining({
+          table: "policy_diff_target",
+          operation: "delete",
+          name: "policy_diff_target_delete",
+        }),
       ]),
     );
     expect(managed.map((p) => p.name)).not.toContain("policy_diff_target_custom_rule");

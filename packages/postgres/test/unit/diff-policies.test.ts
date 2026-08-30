@@ -1,14 +1,24 @@
+import type { Operation } from "@pg-access/core";
 import { defineAuth, owner } from "@pg-access/core";
 import { describe, expect, it } from "vitest";
 import { diffPolicies } from "../../src/diff/diff-policies.js";
 import type { ManagedPolicy } from "../../src/introspect/list-managed-policies.js";
 
+function managed(table: string, operation: Operation): ManagedPolicy {
+  return {
+    table,
+    operation,
+    name: `${table}_${operation}`,
+    using: null,
+    withCheck: null,
+    roles: [],
+  };
+}
+
 describe("diffPolicies", () => {
   it("reports no drift when the database already matches the config", () => {
     const auth = defineAuth({ projects: { rows: { select: owner("user_id") } } });
-    const existing: ManagedPolicy[] = [
-      { table: "projects", operation: "select", name: "projects_select" },
-    ];
+    const existing: ManagedPolicy[] = [managed("projects", "select")];
 
     expect(diffPolicies(auth, existing)).toEqual({ missing: [], orphaned: [] });
   });
@@ -25,8 +35,8 @@ describe("diffPolicies", () => {
   it("flags a managed policy applied to the database but removed from the config as orphaned", () => {
     const auth = defineAuth({ projects: { rows: { select: owner("user_id") } } });
     const existing: ManagedPolicy[] = [
-      { table: "projects", operation: "select", name: "projects_select" },
-      { table: "projects", operation: "delete", name: "projects_delete" },
+      managed("projects", "select"),
+      managed("projects", "delete"),
     ];
 
     expect(diffPolicies(auth, existing)).toEqual({
@@ -40,9 +50,7 @@ describe("diffPolicies", () => {
       projects: { rows: { select: owner("user_id") } },
       orders: { rows: { select: owner("user_id") } },
     });
-    const existing: ManagedPolicy[] = [
-      { table: "projects", operation: "select", name: "projects_select" },
-    ];
+    const existing: ManagedPolicy[] = [managed("projects", "select")];
 
     expect(diffPolicies(auth, existing)).toEqual({
       missing: [{ table: "orders", name: "orders_select" }],

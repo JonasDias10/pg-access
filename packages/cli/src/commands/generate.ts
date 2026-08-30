@@ -1,10 +1,10 @@
+import type { Migration, PolicyChange } from "@pg-access/postgres";
+import { generateMigration, planPolicyChanges, toMigrationFile } from "@pg-access/postgres";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { PolicyRef } from "@pg-access/postgres";
-import { diffPolicies, generateMigration } from "@pg-access/postgres";
-import { fetchManagedPolicies } from "../db/fetch-managed-policies.js";
-import { resolveConfigPathOrThrow } from "../config/resolve-config-path.js";
 import { loadAuthConfig } from "../config/load-config.js";
+import { resolveConfigPathOrThrow } from "../config/resolve-config-path.js";
+import { withPgSession } from "../db/with-pg-session.js";
 
 /** Matches Supabase CLI's own migrations directory convention. */
 const DEFAULT_OUT_DIR = "supabase/migrations";
@@ -15,11 +15,10 @@ export interface GenerateOptions {
   readonly out?: string;
   /**
    * When given (or falling back to the DATABASE_URL environment variable),
-   * the generated migration also drops managed policies applied to this
-   * database that are no longer in the config. Without it, generate() only
-   * knows what's in the config, not what's already applied, so it can't
-   * detect a policy that was removed entirely (see @pg-access/postgres's
-   * `compile()` docs on `existingPolicies`).
+   * the migration is diffed against that live database: unchanged policies
+   * are left out entirely, drifted ones become `ALTER POLICY`, and policies
+   * removed from the config are dropped. Without it, generate() only knows
+   * the config and re-emits every policy as drop-then-recreate.
    */
   readonly databaseUrl?: string;
   /** Overrides the clock used for the migration timestamp. Mainly for tests. */
@@ -28,28 +27,41 @@ export interface GenerateOptions {
 
 export interface GenerateResult {
   readonly configPath: string;
-  readonly filePath: string;
+  /** `null` when a database was given and nothing had drifted, so no file was written. */
+  readonly filePath: string | null;
   readonly sql: string;
-  /** Orphaned policies the migration drops. Empty unless a database was given. */
-  readonly droppedOrphans: readonly PolicyRef[];
+  /**
+   * The diff against the database, empty unless a database was given. Every
+   * entry is `noop` exactly when `filePath` is `null`.
+   */
+  readonly changes: readonly PolicyChange[];
 }
 
 export async function runGenerate(options: GenerateOptions): Promise<GenerateResult> {
   const configPath = resolveConfigPathOrThrow(options.cwd, options.config);
   const auth = await loadAuthConfig(configPath);
+  const now = options.now ?? new Date();
 
   const connectionString = options.databaseUrl ?? process.env["DATABASE_URL"];
-  const existingPolicies =
-    connectionString === undefined
-      ? undefined
-      : await fetchManagedPolicies(
-          connectionString,
-          auth.tables.map((table) => table.name),
-        );
-  const droppedOrphans =
-    existingPolicies === undefined ? [] : diffPolicies(auth, existingPolicies).orphaned;
 
-  const migration = generateMigration(auth, { now: options.now, existingPolicies });
+  let migration: Migration;
+  let changes: readonly PolicyChange[] = [];
+
+  if (connectionString === undefined) {
+    migration = generateMigration(auth, { now });
+  } else {
+    const plan = await withPgSession(connectionString, (session) =>
+      planPolicyChanges(session, auth),
+    );
+
+    changes = plan.changes;
+
+    if (!changes.some((change) => change.kind !== "noop")) {
+      return { configPath, filePath: null, sql: "", changes };
+    }
+
+    migration = toMigrationFile(plan.sql, now);
+  }
 
   const outDir = path.resolve(options.cwd, options.out ?? DEFAULT_OUT_DIR);
   const filePath = path.join(outDir, migration.fileName);
@@ -57,5 +69,5 @@ export async function runGenerate(options: GenerateOptions): Promise<GenerateRes
   await mkdir(outDir, { recursive: true });
   await writeFile(filePath, migration.sql, "utf8");
 
-  return { configPath, filePath, sql: migration.sql, droppedOrphans };
+  return { configPath, filePath, sql: migration.sql, changes };
 }

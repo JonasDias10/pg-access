@@ -6,11 +6,12 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { runGenerate } from "../../src/commands/generate.js";
 
 /**
- * Proves `runGenerate()`'s `databaseUrl` option end-to-end: the generated
- * migration's DROP for an orphaned policy must actually take effect once
- * applied against a real database, not just appear in the SQL string
- * (that part is already covered, with a real server too, in
- * @pg-access/postgres's own integration suite).
+ * Proves `runGenerate()`'s `databaseUrl` option end-to-end against a real
+ * server: an unchanged policy produces no migration at all, a policy removed
+ * from the config is dropped, and applying the generated SQL actually
+ * reconciles the database. The `ALTER POLICY` path for a drifted expression
+ * is covered (with the Supabase auth stub it needs) in @pg-access/postgres's
+ * plan-policy-changes integration suite.
  *
  * Requires a database reachable at PG_ACCESS_TEST_DATABASE_URL (defaults to
  * the docker-compose.test.yml service at the repo root). Start it with:
@@ -55,33 +56,50 @@ describe("runGenerate with databaseUrl against a real PostgreSQL database", () =
     await rm(cwd, { recursive: true, force: true });
   });
 
-  it("also drops a policy removed from the config once the migration is applied", async () => {
+  const writeConfig = async (body: string) => {
     await writeFile(
       path.join(cwd, "pgaccess.config.ts"),
-      `import { defineAuth, publicAccess } from "@pg-access/core";
-export default defineAuth({
-  cli_generate_target: { rows: { select: publicAccess(), delete: publicAccess() } },
-});`,
+      `import { defineAuth, publicAccess } from "@pg-access/core";\nexport default defineAuth(${body});`,
     );
-    const firstResult = await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
-    await pool.query(await readFile(firstResult.filePath, "utf8"));
+  };
 
-    await writeFile(
-      path.join(cwd, "pgaccess.config.ts"),
-      `import { defineAuth, publicAccess } from "@pg-access/core";
-export default defineAuth({ cli_generate_target: { rows: { select: publicAccess() } } });`,
+  it("drops a removed policy, leaves an unchanged one untouched, then no-ops", async () => {
+    await writeConfig(
+      `{ cli_generate_target: { rows: { select: publicAccess(), delete: publicAccess() } } }`,
     );
-    const secondResult = await runGenerate({
+    const first = await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
+    if (first.filePath === null) throw new Error("expected a first migration");
+    await pool.query(await readFile(first.filePath, "utf8"));
+
+    // `delete` removed; `select` unchanged.
+    await writeConfig(`{ cli_generate_target: { rows: { select: publicAccess() } } }`);
+    const second = await runGenerate({
       cwd,
       databaseUrl: connectionString,
       now: new Date("2026-08-19T14:05:00Z"),
     });
+    if (second.filePath === null) throw new Error("expected a second migration");
 
-    expect(secondResult.droppedOrphans).toEqual([
-      { table: "cli_generate_target", name: "cli_generate_target_delete" },
-    ]);
-    const sql = await readFile(secondResult.filePath, "utf8");
+    expect(second.changes).toEqual(
+      expect.arrayContaining([
+        {
+          table: "cli_generate_target",
+          operation: "select",
+          name: "cli_generate_target_select",
+          kind: "noop",
+        },
+        {
+          table: "cli_generate_target",
+          operation: "delete",
+          name: "cli_generate_target_delete",
+          kind: "drop",
+        },
+      ]),
+    );
+
+    const sql = await readFile(second.filePath, "utf8");
     expect(sql).toContain('drop policy if exists "cli_generate_target_delete"');
+    expect(sql).not.toContain('policy "cli_generate_target_select"');
 
     await pool.query(sql);
     const remaining = await pool.query(
@@ -89,5 +107,14 @@ export default defineAuth({ cli_generate_target: { rows: { select: publicAccess(
       ["cli_generate_target"],
     );
     expect(remaining.rows).toEqual([{ policyname: "cli_generate_target_select" }]);
+
+    // Nothing left to reconcile.
+    const third = await runGenerate({
+      cwd,
+      databaseUrl: connectionString,
+      now: new Date("2026-08-19T14:07:00Z"),
+    });
+    expect(third.filePath).toBeNull();
+    expect(third.changes.every((change) => change.kind === "noop")).toBe(true);
   });
 });

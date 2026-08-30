@@ -7,10 +7,10 @@ import { runCheck } from "../../src/commands/check.js";
 
 /**
  * Proves `runCheck()` end-to-end against a real database: not just that
- * `diffPolicies()` computes the right verdict (that's already covered, with
- * a real server too, in @pg-access/postgres's own integration suite), but
- * that this package's own plumbing - loading the config, opening a real
- * `pg.Pool` from a connection string, closing it again - actually works.
+ * `planPolicyChanges()` computes the right verdict (that's already covered,
+ * with a real server too, in @pg-access/postgres's own integration suite),
+ * but that this package's own plumbing - loading the config, opening a real
+ * `pg.Pool`, holding one session, closing it again - actually works.
  *
  * Requires a database reachable at PG_ACCESS_TEST_DATABASE_URL (defaults to
  * the docker-compose.test.yml service at the repo root). Start it with:
@@ -72,6 +72,7 @@ export default defineAuth({ cli_check_target: { rows: { select: publicAccess() }
     const result = await runCheck({ cwd, databaseUrl: connectionString });
 
     expect(result.missing).toEqual([]);
+    expect(result.changed).toEqual([]);
     expect(result.orphaned).toEqual([]);
   });
 
@@ -81,7 +82,34 @@ export default defineAuth({ cli_check_target: { rows: { select: publicAccess() }
     const result = await runCheck({ cwd, databaseUrl: connectionString });
 
     expect(result.missing).toEqual([
-      { table: "cli_check_target", name: "cli_check_target_select" },
+      {
+        table: "cli_check_target",
+        operation: "select",
+        name: "cli_check_target_select",
+        kind: "create",
+      },
+    ]);
+    expect(result.changed).toEqual([]);
+    expect(result.orphaned).toEqual([]);
+  });
+
+  it("reports a changed policy whose applied definition drifted from the config", async () => {
+    await writeFile(path.join(cwd, "pgaccess.config.ts"), configFile);
+    // Same name/command, different USING - publicAccess() compiles to `using (true)`.
+    await pool.query(
+      'create policy "cli_check_target_select" on "cli_check_target" for select to public using (user_id is not null);',
+    );
+
+    const result = await runCheck({ cwd, databaseUrl: connectionString });
+
+    expect(result.missing).toEqual([]);
+    expect(result.changed).toEqual([
+      {
+        table: "cli_check_target",
+        operation: "select",
+        name: "cli_check_target_select",
+        kind: "alter",
+      },
     ]);
     expect(result.orphaned).toEqual([]);
   });
@@ -98,8 +126,14 @@ export default defineAuth({ cli_check_target: { rows: { select: publicAccess() }
     const result = await runCheck({ cwd, databaseUrl: connectionString });
 
     expect(result.missing).toEqual([]);
+    expect(result.changed).toEqual([]);
     expect(result.orphaned).toEqual([
-      { table: "cli_check_target", name: "cli_check_target_delete" },
+      {
+        table: "cli_check_target",
+        operation: "delete",
+        name: "cli_check_target_delete",
+        kind: "drop",
+      },
     ]);
   });
 });

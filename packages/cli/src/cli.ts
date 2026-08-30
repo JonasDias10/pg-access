@@ -1,7 +1,6 @@
+import type { PolicyChange, PolicyRef } from "@pg-access/postgres";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { quoteIdent } from "@pg-access/postgres";
-import type { PolicyRef } from "@pg-access/postgres";
 import { runCheck } from "./commands/check.js";
 import { runGenerate } from "./commands/generate.js";
 import { runInit } from "./commands/init.js";
@@ -25,9 +24,10 @@ Options:
                          in the current directory)
   --out <dir>            Directory to write the migration into (generate
                          only, default: supabase/migrations)
-  --database-url <url>  Database to compare against (required for check;
-                         optional for generate, to also drop policies no
-                         longer in the config. Default: the DATABASE_URL
+  --database-url <url>  Database to diff against (required for check;
+                         optional for generate, to emit only what drifted -
+                         ALTER for changed policies, DROP for removed ones,
+                         nothing for unchanged. Default: the DATABASE_URL
                          environment variable)
   -h, --help             Show this help message
   -v, --version          Show the CLI version
@@ -45,6 +45,23 @@ function printPolicyList(policies: readonly PolicyRef[]): void {
   for (const policy of policies) {
     console.log(`  - ${policy.table}.${policy.name}`);
   }
+}
+
+function summarizeChanges(changes: readonly PolicyChange[]): string | null {
+  const counts = { create: 0, alter: 0, drop: 0, noop: 0 };
+
+  for (const change of changes) {
+    counts[change.kind] += 1;
+  }
+
+  const parts: string[] = [];
+
+  if (counts.create > 0) parts.push(`${counts.create} created`);
+  if (counts.alter > 0) parts.push(`${counts.alter} altered`);
+  if (counts.drop > 0) parts.push(`${counts.drop} dropped`);
+  if (counts.noop > 0) parts.push(`${counts.noop} unchanged`);
+
+  return parts.length > 0 ? parts.join(", ") : null;
 }
 
 export async function main(argv: readonly string[]): Promise<number> {
@@ -92,7 +109,11 @@ export async function main(argv: readonly string[]): Promise<number> {
         databaseUrl: values["database-url"],
       });
 
-      if (result.missing.length === 0 && result.orphaned.length === 0) {
+      if (
+        result.missing.length === 0 &&
+        result.changed.length === 0 &&
+        result.orphaned.length === 0
+      ) {
         console.log("In sync: no drift between the config and the database.");
         return 0;
       }
@@ -100,20 +121,24 @@ export async function main(argv: readonly string[]): Promise<number> {
       if (result.missing.length > 0) {
         console.log("Missing (declared in the config, not yet applied):");
         printPolicyList(result.missing);
-        console.log("Run `pg-access generate` and apply the resulting migration.\n");
+        console.log("");
+      }
+
+      if (result.changed.length > 0) {
+        console.log("Changed (applied, but the config no longer matches):");
+        printPolicyList(result.changed);
+        console.log("");
       }
 
       if (result.orphaned.length > 0) {
         console.log("Orphaned (applied to the database, no longer in the config):");
         printPolicyList(result.orphaned);
-        console.log(
-          "Run `pg-access generate --database-url <url>` to drop these in your next migration:",
-        );
-        for (const policy of result.orphaned) {
-          console.log(`  drop policy ${quoteIdent(policy.name)} on ${quoteIdent(policy.table)};`);
-        }
+        console.log("");
       }
 
+      console.log(
+        "Run `pg-access generate --database-url <url>` and apply the resulting migration.",
+      );
       return 1;
     }
 
@@ -123,11 +148,20 @@ export async function main(argv: readonly string[]): Promise<number> {
       out: values.out,
       databaseUrl: values["database-url"],
     });
-    console.log(`Wrote ${path.relative(process.cwd(), result.filePath)}`);
-    if (result.droppedOrphans.length > 0) {
-      console.log("Also dropping policies no longer in the config:");
-      printPolicyList(result.droppedOrphans);
+
+    if (result.filePath === null) {
+      console.log("No changes: the database already matches the config.");
+      return 0;
     }
+
+    console.log(`Wrote ${path.relative(process.cwd(), result.filePath)}`);
+
+    const summary = summarizeChanges(result.changes);
+
+    if (summary !== null) {
+      console.log(summary);
+    }
+
     return 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

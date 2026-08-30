@@ -39,10 +39,15 @@ CLI's own naming convention).
 npx pg-access generate
 ```
 
-Pass `--database-url` (or set `DATABASE_URL`) and it also drops any
-pg-access-managed policy that's applied to that database but no longer in
-the config; still just written into the migration file, never executed
-against the database directly.
+Without `--database-url` it has nothing to diff against, so it re-emits
+every policy as `drop policy if exists` + `create policy`. Pass
+`--database-url` (or set `DATABASE_URL`) and it diffs against that live
+database: an unchanged policy is left out, a drifted one becomes an `ALTER
+POLICY`, and a removed one becomes a `DROP`. If nothing has drifted, no
+migration file is written. Nothing is executed against the database
+directly; the diff opens one always-rolled-back transaction so PostgreSQL
+can normalize the config's policies for a reliable comparison, which needs
+a role allowed to create policies on the target tables.
 
 ```bash
 npx pg-access generate --database-url postgres://...
@@ -50,23 +55,25 @@ npx pg-access generate --database-url postgres://...
 
 ## `check`
 
-Connects to a live database and compares it against the config. Read-only;
-it never touches the database, and exits non-zero when there's drift, so
+Connects to a live database and compares it against the config. Net
+read-only; it only opens the same rolled-back normalization transaction
+`generate --database-url` does, and exits non-zero when there's drift, so
 it's usable as a CI gate.
 
 ```bash
 npx pg-access check --database-url postgres://...
 ```
 
-- Policies the config declares that aren't applied yet show up as
-  **missing**; fix by running `generate` and applying the result.
-- pg-access-managed policies (named `<table>_<operation>`) that are
-  applied but no longer in the config show up as **orphaned**; fix by
-  running `generate --database-url` and applying that result.
+- **missing** - the config declares it, nothing applied it yet.
+- **changed** - it's applied, but its compiled `USING` / `WITH CHECK` /
+  `TO` no longer matches the config.
+- **orphaned** - it's applied and pg-access-managed (named
+  `<table>_<operation>`), no longer declared.
 
-Orphan detection (both `check` and `generate --database-url`) only covers
-tables still declared in the config; a table removed from the config
-entirely isn't visible to it yet.
+Fix any of them by running `generate --database-url` and applying the
+migration. Drift detection (both `check` and `generate --database-url`)
+only covers tables still declared in the config; a table removed from the
+config entirely isn't visible to it yet.
 
 ## Options
 
@@ -79,8 +86,7 @@ pg-access check [--config <path>] [--database-url <url>]
                          auto-detected, or pgaccess.config.ts for init)
   --out <dir>            Directory to write the migration into (generate
                          only, default: supabase/migrations)
-  --database-url <url>  Database to compare against (required for check;
-                         optional for generate, to also drop policies no
-                         longer in the config. Default: the DATABASE_URL
-                         environment variable)
+  --database-url <url>  Database to diff against (required for check;
+                         optional for generate, to emit only what drifted.
+                         Default: the DATABASE_URL environment variable)
 ```
