@@ -1,5 +1,9 @@
 # @pg-access/core
 
+[![npm](https://img.shields.io/npm/v/@pg-access/core)](https://www.npmjs.com/package/@pg-access/core)
+[![downloads](https://img.shields.io/npm/dm/@pg-access/core)](https://www.npmjs.com/package/@pg-access/core)
+[![license](https://img.shields.io/npm/l/@pg-access/core)](https://github.com/JonasDias10/pg-access/blob/main/LICENSE)
+
 Type-safe DSL and AST for declaring PostgreSQL authorization policies.
 Framework-agnostic and side-effect-free: it produces a plain policy tree,
 never SQL and never a database connection. `@pg-access/postgres` compiles

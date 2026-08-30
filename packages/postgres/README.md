@@ -1,5 +1,9 @@
 # @pg-access/postgres
 
+[![npm](https://img.shields.io/npm/v/@pg-access/postgres)](https://www.npmjs.com/package/@pg-access/postgres)
+[![downloads](https://img.shields.io/npm/dm/@pg-access/postgres)](https://www.npmjs.com/package/@pg-access/postgres)
+[![license](https://img.shields.io/npm/l/@pg-access/postgres)](https://github.com/JonasDias10/pg-access/blob/main/LICENSE)
+
 Compiles the `AuthNode` AST from `@pg-access/core` into real PostgreSQL
 Row-Level Security SQL: `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` plus
 one `CREATE POLICY` per declared operation, with a Supabase-flavored

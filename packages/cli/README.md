@@ -1,5 +1,9 @@
 # @pg-access/cli
 
+[![npm](https://img.shields.io/npm/v/@pg-access/cli)](https://www.npmjs.com/package/@pg-access/cli)
+[![downloads](https://img.shields.io/npm/dm/@pg-access/cli)](https://www.npmjs.com/package/@pg-access/cli)
+[![license](https://img.shields.io/npm/l/@pg-access/cli)](https://github.com/JonasDias10/pg-access/blob/main/LICENSE)
+
 Command-line interface for pg-access. Removes the boilerplate from
 `examples/basic/src/generate.ts`: point it at a config file, get a
 migration written to disk.
