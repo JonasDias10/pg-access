@@ -28,10 +28,9 @@ export default defineAuth({ projects: { rows: { select: owner("user_id") } } });
 
     const result = await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
 
-    expect(result.filePath).toBe(
-      path.join(cwd, "supabase", "migrations", "20260819140307_pg_access.sql"),
-    );
-    const written = await readFile(result.filePath, "utf8");
+    const expectedPath = path.join(cwd, "supabase", "migrations", "20260819140307_pg_access.sql");
+    expect(result.filePath).toBe(expectedPath);
+    const written = await readFile(expectedPath, "utf8");
     expect(written).toContain('create policy "projects_select"');
   });
 
@@ -53,7 +52,7 @@ export default defineAuth({ projects: { rows: { select: owner("user_id") } } });
     );
   });
 
-  it("returns an empty droppedOrphans list when no database is given", async () => {
+  it("returns an empty changes list and always writes a file when no database is given", async () => {
     await writeFile(
       path.join(cwd, "pgaccess.config.ts"),
       `import { defineAuth, owner } from "@pg-access/core";
@@ -62,7 +61,8 @@ export default defineAuth({ projects: { rows: { select: owner("user_id") } } });
 
     const result = await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
 
-    expect(result.droppedOrphans).toEqual([]);
+    expect(result.changes).toEqual([]);
+    expect(result.filePath).not.toBeNull();
   });
 
   it("throws a clear error when no config file is found", async () => {

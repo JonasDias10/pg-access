@@ -1,8 +1,8 @@
-import type { PolicyDiffResult } from "@pg-access/postgres";
-import { diffPolicies } from "@pg-access/postgres";
-import { fetchManagedPolicies } from "../db/fetch-managed-policies.js";
-import { resolveConfigPathOrThrow } from "../config/resolve-config-path.js";
+import type { PolicyChange } from "@pg-access/postgres";
+import { planPolicyChanges } from "@pg-access/postgres";
 import { loadAuthConfig } from "../config/load-config.js";
+import { resolveConfigPathOrThrow } from "../config/resolve-config-path.js";
+import { withPgSession } from "../db/with-pg-session.js";
 
 export interface CheckOptions {
   readonly cwd: string;
@@ -10,16 +10,24 @@ export interface CheckOptions {
   readonly databaseUrl?: string;
 }
 
-export interface CheckResult extends PolicyDiffResult {
+export interface CheckResult {
   readonly configPath: string;
+  /** Declared in the config, not applied yet. */
+  readonly missing: readonly PolicyChange[];
+  /** Applied, but the compiled definition no longer matches the config. */
+  readonly changed: readonly PolicyChange[];
+  /** Applied and pg-access-managed, no longer declared in the config. */
+  readonly orphaned: readonly PolicyChange[];
 }
 
 /**
- * Read-only: reports drift between the config and what's actually applied
- * to a live database, it never modifies either side. Fixing "missing"
- * means running `generate` (and applying the result); fixing "orphaned"
- * means running `generate --database-url` (which drops them in the
- * generated migration, still nothing applied directly by this command).
+ * Reports drift between the config and what's actually applied to a live
+ * database: policies missing, policies whose expression/role drifted, and
+ * pg-access-managed policies no longer declared. Net read-only - it opens
+ * one transaction to let PostgreSQL normalize the config's policies for a
+ * reliable comparison, then always rolls it back - but that step does need
+ * a role allowed to create policies on the target tables. Fixing drift
+ * means running `generate --database-url` and applying the migration.
  */
 export async function runCheck(options: CheckOptions): Promise<CheckResult> {
   const configPath = resolveConfigPathOrThrow(options.cwd, options.config);
@@ -32,10 +40,12 @@ export async function runCheck(options: CheckOptions): Promise<CheckResult> {
     );
   }
 
-  const existing = await fetchManagedPolicies(
-    connectionString,
-    auth.tables.map((table) => table.name),
-  );
-  const diff = diffPolicies(auth, existing);
-  return { configPath, ...diff };
+  const plan = await withPgSession(connectionString, (session) => planPolicyChanges(session, auth));
+
+  return {
+    configPath,
+    missing: plan.changes.filter((change) => change.kind === "create"),
+    changed: plan.changes.filter((change) => change.kind === "alter"),
+    orphaned: plan.changes.filter((change) => change.kind === "drop"),
+  };
 }

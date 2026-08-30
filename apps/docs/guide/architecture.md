@@ -72,8 +72,12 @@ exact rule and its current known limitation with
 
 - **`@pg-access/core`** is the DSL and AST; it's what you write in your config file.
 - **`@pg-access/postgres`** provides `compile()`, `generateMigration()`, and
-  the introspection/diffing (`listManagedPolicies()`, `diffPolicies()`)
-  `check` and `generate --database-url` are built on.
+  the introspection/diffing (`listManagedPolicies()`, `diffPolicies()`,
+  `planPolicyChanges()`) that `check` and `generate --database-url` are
+  built on. `compile()` alone, with no database, drop-and-recreates every
+  policy; `planPolicyChanges()` diffs against a live database and emits
+  `ALTER POLICY` for what drifted, `CREATE` for what's missing, and nothing
+  for policies that already match.
 - **[`@pg-access/cli`](/cli/)** is the `pg-access` command: `init`,
   `generate`, `check`. A thin wrapper; no compiler or diffing logic lives
   here.

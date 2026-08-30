@@ -19,19 +19,28 @@ It refuses to overwrite one that already exists.
 `.cjs`) in the current directory, expects it to default-export the result
 of `defineAuth(...)` from `@pg-access/core`, and writes a timestamped
 migration into `supabase/migrations/` (matching the Supabase CLI's own
-naming convention). Pass `--database-url` (or set `DATABASE_URL`) and it
-also drops any pg-access-managed policy that's applied to that database but
-no longer in the config - still just written into the migration file, not
-executed against the database itself.
+naming convention).
 
-`check` connects to a live database and compares it against the config:
-policies the config declares that aren't applied yet show up as
-**missing**, and pg-access-managed policies (named `<table>_<operation>`)
-that are applied but no longer in the config show up as **orphaned**. It's
-read-only - it never touches the database - and exits non-zero when there's
-drift, so it's usable as a CI gate. Fixing "missing" means running
-`generate` and applying the result; fixing "orphaned" means running
-`generate --database-url <url>` and applying that result too.
+Without `--database-url` it has nothing to diff against, so it re-emits
+every policy as `drop policy if exists` + `create policy`. Pass
+`--database-url` (or set `DATABASE_URL`) and it diffs against that live
+database instead: an unchanged policy is left out entirely, a policy whose
+compiled `USING` / `WITH CHECK` / `TO` drifted becomes an `ALTER POLICY`,
+and a policy removed from the config becomes a `DROP`. If nothing has
+drifted, no migration file is written at all. Nothing is ever executed
+against the database directly; the diff just opens one transaction (always
+rolled back) so PostgreSQL can normalize the config's policies for a
+reliable comparison, which needs a role allowed to create policies on the
+target tables.
+
+`check` connects to a live database and compares it against the config,
+reporting **missing** (declared, not applied yet), **changed** (applied,
+but the config no longer matches), and **orphaned** (applied and
+pg-access-managed, no longer declared). Net read-only - it only opens the
+same rolled-back normalization transaction `generate --database-url` does -
+and exits non-zero when there's drift, so it's usable as a CI gate. Fix any
+category by running `generate --database-url <url>` and applying the
+migration.
 
 ```ts
 // pgaccess.config.ts
@@ -60,23 +69,20 @@ pg-access check [--config <path>] [--database-url <url>]
                          auto-detected, or pgaccess.config.ts for init)
   --out <dir>            Directory to write the migration into (generate
                          only, default: supabase/migrations)
-  --database-url <url>  Database to compare against (required for check;
-                         optional for generate, to also drop policies no
-                         longer in the config. Default: the DATABASE_URL
-                         environment variable)
+  --database-url <url>  Database to diff against (required for check;
+                         optional for generate, to emit only what drifted.
+                         Default: the DATABASE_URL environment variable)
 ```
 
 The CLI is a thin wrapper: `init` just writes a template file, `generate`
-locates and loads your config then calls `generateMigration()` (and, with
-`--database-url`, `listManagedPolicies()`) from `@pg-access/postgres` and
+locates and loads your config then calls `generateMigration()` (or, with
+`--database-url`, `planPolicyChanges()`) from `@pg-access/postgres` and
 writes the result, and `check` locates and loads your config then calls
-`listManagedPolicies()` and `diffPolicies()` against a real connection. No
-compiler or diffing logic lives here, see that package for how the SQL and
-the diff are actually produced.
+`planPolicyChanges()` against a real connection. No compiler or diffing
+logic lives here, see that package for how the SQL and the diff are
+actually produced.
 
-Orphan detection (both `check` and `generate --database-url`) only ever
-covers tables still declared in the config; a table removed from the
-config entirely isn't visible to it yet (see `diffPolicies()`'s own docs in
-`@pg-access/postgres` for why). Full `ALTER POLICY`-based diffing (rather
-than always drop+recreate) is also still ahead; see the open issues on
-GitHub.
+Drift detection (both `check` and `generate --database-url`) only ever
+covers tables still declared in the config; a table removed from the config
+entirely isn't visible to it yet (see `diffPolicies()`'s own docs in
+`@pg-access/postgres` for why).
