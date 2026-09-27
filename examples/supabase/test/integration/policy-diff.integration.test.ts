@@ -1,5 +1,6 @@
 import { defineAuth, or, owner, publicAccess, role } from "@pg-access/core";
-import { planPolicyChanges } from "@pg-access/postgres";
+import { createSnapshot, planPolicyChanges, serializeSnapshot } from "@pg-access/postgres";
+import { readFile } from "node:fs/promises";
 import pg from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import declaredAuth from "../../pgaccess.config.js";
@@ -50,6 +51,15 @@ describe("pg-access diffing against the live Supabase database", () => {
       client.release();
     }
   };
+
+  it("checked-in pgaccess.snapshot.json matches pgaccess.config.ts", async () => {
+    const snapshot = await readFile(
+      new URL("../../pgaccess.snapshot.json", import.meta.url),
+      "utf8",
+    );
+
+    expect(snapshot).toBe(serializeSnapshot(createSnapshot(declaredAuth)));
+  });
 
   it("checked-in _pg_access.sql migration matches pgaccess.config.ts: no drift", async () => {
     const plan = await withSession((session) => planPolicyChanges(session, declaredAuth));

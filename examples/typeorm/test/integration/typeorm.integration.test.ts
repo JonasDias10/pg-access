@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { planPolicyChanges } from "@pg-access/postgres";
+import { readFile } from "node:fs/promises";
+import { createSnapshot, planPolicyChanges, serializeSnapshot } from "@pg-access/postgres";
 import pg from "pg";
 import type { DataSource } from "typeorm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -102,6 +103,15 @@ describe("examples/typeorm migrations against real PostgreSQL", () => {
     const plan = await planPolicyChanges(client, auth).finally(() => client.end());
 
     expect(plan.changes.every((change) => change.kind === "noop")).toBe(true);
+  });
+
+  it("checked-in pgaccess.snapshot.json matches the config, so offline generate starts from it", async () => {
+    const snapshot = await readFile(
+      new URL("../../pgaccess.snapshot.json", import.meta.url),
+      "utf8",
+    );
+
+    expect(snapshot).toBe(serializeSnapshot(createSnapshot(auth)));
   });
 
   it("migration:revert removes every policy and turns RLS back off", async () => {

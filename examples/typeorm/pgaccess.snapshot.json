@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "policies": [
+    {
+      "table": "notes",
+      "operation": "select",
+      "name": "notes_select",
+      "roles": ["authenticated"],
+      "using": "(\"user_id\" = (select auth.uid()) or (select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')",
+      "withCheck": null
+    },
+    {
+      "table": "notes",
+      "operation": "insert",
+      "name": "notes_insert",
+      "roles": ["authenticated"],
+      "using": null,
+      "withCheck": "\"user_id\" = (select auth.uid())"
+    },
+    {
+      "table": "notes",
+      "operation": "update",
+      "name": "notes_update",
+      "roles": ["authenticated"],
+      "using": "\"user_id\" = (select auth.uid())",
+      "withCheck": "\"user_id\" = (select auth.uid())"
+    },
+    {
+      "table": "notes",
+      "operation": "delete",
+      "name": "notes_delete",
+      "roles": ["authenticated"],
+      "using": "(\"user_id\" = (select auth.uid()) or (select auth.jwt() -> 'app_metadata' ->> 'role') = 'admin')",
+      "withCheck": null
+    }
+  ]
+}
