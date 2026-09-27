@@ -21,6 +21,18 @@ export type { Dialect } from "./dialect/postgres.js";
 export { generateMigration, toMigrationFile } from "./migrations/generator.js";
 export type { Migration, MigrationOptions } from "./migrations/generator.js";
 
+export {
+  createSnapshot,
+  parseSnapshot,
+  planSnapshotChanges,
+  serializeSnapshot,
+  SNAPSHOT_VERSION,
+} from "./snapshot/snapshot.js";
+export type { PolicySnapshot, SnapshotOptions, SnapshotPolicy } from "./snapshot/snapshot.js";
+
+export { renderRollback } from "./migrations/rollback.js";
+export type { Rollback, RollbackInput } from "./migrations/rollback.js";
+
 export { listManagedPolicies } from "./introspect/list-managed-policies.js";
 export type { ManagedPolicy, PgQueryable } from "./introspect/list-managed-policies.js";
 

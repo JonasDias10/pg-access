@@ -1,0 +1,35 @@
+{
+  "name": "@pg-access/example-typeorm",
+  "private": true,
+  "version": "0.0.0",
+  "description": "pg-access in a TypeORM project: pgaccess.config.ts -> pg-access generate --format typeorm -> a migration class with up() and down() -> RLS enforced on TypeORM queries.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typeorm": "tsx node_modules/typeorm/cli.js -d src/data-source.ts",
+    "migration:run": "pnpm typeorm migration:run",
+    "migration:revert": "pnpm typeorm migration:revert",
+    "generate": "pg-access generate --format typeorm",
+    "generate:db": "pg-access generate --format typeorm --database-url ${DATABASE_URL:-postgres://pgaccess:pgaccess@localhost:54329/pg_access_test}",
+    "baseline": "pg-access baseline --database-url ${DATABASE_URL:-postgres://pgaccess:pgaccess@localhost:54329/pg_access_test}",
+    "check": "pg-access check --database-url ${DATABASE_URL:-postgres://pgaccess:pgaccess@localhost:54329/pg_access_test}",
+    "demo": "tsx src/demo.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test:integration": "vitest run test/integration --no-file-parallelism"
+  },
+  "dependencies": {
+    "pg": "8.23.0",
+    "typeorm": "1.1.1"
+  },
+  "devDependencies": {
+    "@pg-access/cli": "workspace:*",
+    "@pg-access/core": "workspace:*",
+    "@pg-access/postgres": "workspace:*",
+    "@types/node": "26.2.0",
+    "@types/pg": "8.23.1",
+    "tsx": "4.23.12",
+    "typescript": "6.0.3",
+    "vitest": "4.1.11"
+  }
+}

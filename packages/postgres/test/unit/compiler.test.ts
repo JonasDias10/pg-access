@@ -158,4 +158,52 @@ describe("compile", () => {
 
     expect(() => compile(invalidAuth)).toThrow(/empty SQL identifier/);
   });
+
+  describe("down", () => {
+    it("without existingPolicies, drops every policy it creates and leaves RLS on", () => {
+      const { down } = compile(
+        defineAuth({ projects: { rows: { select: owner("user_id"), delete: owner("user_id") } } }),
+      );
+
+      expect(down.statements).toEqual([
+        'drop policy if exists "projects_delete" on "projects";',
+        'drop policy if exists "projects_select" on "projects";',
+      ]);
+    });
+
+    it("with existingPolicies, restores replaced policies and recreates dropped ones", () => {
+      const { down } = compile(defineAuth({ projects: { rows: { select: owner("user_id") } } }), {
+        existingPolicies: [
+          {
+            table: "projects",
+            operation: "select",
+            name: "projects_select",
+            using: "(user_id = old_column)",
+            withCheck: null,
+            roles: ["authenticated"],
+          },
+          {
+            table: "projects",
+            operation: "delete",
+            name: "projects_delete",
+            using: "true",
+            withCheck: null,
+            roles: ["public"],
+          },
+        ],
+      });
+
+      expect(down.statements).toEqual([
+        'create policy "projects_delete"\non "projects"\nfor delete\nto public\nusing (\n  true\n);',
+        'alter policy "projects_select"\non "projects"\nto "authenticated"\nusing (\n  (user_id = old_column)\n);',
+      ]);
+    });
+
+    it("is empty when there is nothing to compile", () => {
+      expect(compile(defineAuth({ projects: { rows: {} } })).down).toEqual({
+        statements: [],
+        sql: "",
+      });
+    });
+  });
 });

@@ -134,6 +134,9 @@ for the same pipeline against a real local Supabase project, with a small
 Fastify API and integration tests proving the generated policies hold up
 against real signed-in users, plus `pg-access check` / `generate
 --database-url` diffing a changed config against the running database.
+[examples/typeorm](examples/typeorm) ships the policies as TypeORM
+migrations (`pg-access generate --format typeorm`) and applies them to
+repository queries.
 
 ## The DSL
 
@@ -177,6 +180,7 @@ packages/
 ├── core/       DSL + AST. No SQL, no PostgreSQL, no Supabase.
 ├── postgres/   Compiles the AST into PostgreSQL DDL + migrations.
 ├── cli/        pg-access init / generate / check (read-only drift detection).
+├── typeorm/    Writes migrations as TypeORM classes, with a down() that restores the previous policies.
 └── testing/    asUser() + createSupabaseAuthStub() for testing RLS against a real database
 ```
 

@@ -5,6 +5,7 @@ packages/
 ├── core/       DSL + AST. No SQL, no PostgreSQL, no Supabase.
 ├── postgres/   Compiles the AST into PostgreSQL DDL + migrations.
 ├── cli/        pg-access init / generate / check (read-only drift detection).
+├── typeorm/    Writes migrations as TypeORM classes, with a down() that restores the previous policies.
 └── testing/    asUser() + createSupabaseAuthStub() for testing RLS against a real database
 ```
 

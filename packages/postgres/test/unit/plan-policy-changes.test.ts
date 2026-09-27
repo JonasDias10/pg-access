@@ -21,6 +21,8 @@ function fakeSession(options: {
   applied?: Record<string, PolicyState>;
   normalized?: Record<string, PolicyState>;
   liveTables?: string[] | null;
+  /** Live tables that already have RLS enabled. */
+  rlsEnabled?: string[];
 }): { session: PgQueryable; statements: string[]; queries: string[] } {
   const applied = options.applied ?? {};
   const normalized = options.normalized ?? {};
@@ -51,7 +53,12 @@ function fakeSession(options: {
           options.liveTables === undefined
             ? requested
             : (options.liveTables ?? []).filter((table) => requested.includes(table));
-        return { rows: live.map((tablename) => ({ tablename })) };
+        return {
+          rows: live.map((tablename) => ({
+            tablename,
+            rowsecurity: options.rlsEnabled?.includes(tablename) ?? false,
+          })),
+        };
       }
 
       if (text.includes("from pg_policies")) {
@@ -297,5 +304,85 @@ describe("planPolicyChanges", () => {
       'create policy "projects_insert"',
       'create policy "projects_update"',
     ]);
+  });
+
+  describe("down", () => {
+    it("drops a created policy and turns RLS back off when it was off before", async () => {
+      const { session } = fakeSession({ applied: {}, normalized: {} });
+
+      const plan = await planPolicyChanges(session, auth);
+
+      expect(plan.down.statements).toEqual([
+        'drop policy if exists "projects_select" on "projects";',
+        'alter table "projects" disable row level security;',
+      ]);
+    });
+
+    it("leaves RLS on when the table already had it enabled", async () => {
+      const { session } = fakeSession({ applied: {}, normalized: {}, rlsEnabled: ["projects"] });
+
+      const plan = await planPolicyChanges(session, auth);
+
+      expect(plan.down.sql).not.toContain("disable row level security");
+    });
+
+    it("alters a drifted policy back to its applied definition", async () => {
+      const stale = {
+        qual: "(user_id = other_column)",
+        with_check: null,
+        roles: ["authenticated"],
+      };
+      const { session } = fakeSession({
+        applied: { projects_select: stale },
+        normalized: { projects_select: ownerState },
+        rlsEnabled: ["projects"],
+      });
+
+      const plan = await planPolicyChanges(session, auth);
+
+      expect(plan.down.statements).toEqual([
+        [
+          'alter policy "projects_select"',
+          'on "projects"',
+          'to "authenticated"',
+          "using (\n  (user_id = other_column)\n)",
+        ].join("\n") + ";",
+      ]);
+    });
+
+    it("recreates a dropped policy from its applied definition", async () => {
+      const { session } = fakeSession({
+        applied: {
+          projects_select: ownerState,
+          projects_insert: { qual: null, with_check: "true", roles: ["authenticated", "anon"] },
+        },
+        normalized: { projects_select: ownerState },
+        rlsEnabled: ["projects"],
+      });
+
+      const plan = await planPolicyChanges(session, auth);
+
+      expect(plan.down.statements).toEqual([
+        [
+          'create policy "projects_insert"',
+          'on "projects"',
+          "for insert",
+          'to "authenticated", "anon"',
+          "with check (\n  true\n)",
+        ].join("\n") + ";",
+      ]);
+    });
+
+    it("is empty when the plan changes nothing", async () => {
+      const { session } = fakeSession({
+        applied: { projects_select: ownerState },
+        normalized: { projects_select: ownerState },
+        rlsEnabled: ["projects"],
+      });
+
+      const plan = await planPolicyChanges(session, auth);
+
+      expect(plan.down).toEqual({ statements: [], sql: "" });
+    });
   });
 });

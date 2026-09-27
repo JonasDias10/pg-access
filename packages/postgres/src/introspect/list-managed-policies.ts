@@ -45,6 +45,8 @@ export interface PgPolicyRow {
 /** One row of a `pg_tables` query, naming a table in the `public` schema. */
 export interface PgTableRow {
   readonly tablename: string;
+  /** Whether RLS is enabled on the table. */
+  readonly rowsecurity: boolean;
 }
 
 /**

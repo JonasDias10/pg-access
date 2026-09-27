@@ -112,8 +112,9 @@ producing an `ALTER`/`DROP` rather than a recreate.
 After editing `pgaccess.config.ts`, `generate` has two modes:
 
 ```bash
-# From the config alone. Re-emits every policy as drop + recreate.
-# Good for a first migration, or a throwaway database.
+# Diffed against pgaccess.snapshot.json, the policies of the last migration
+# it wrote. No database needed. Emits only what changed, then updates the
+# snapshot; commit both.
 pnpm --filter @pg-access/example-supabase generate
 ```
 
@@ -126,9 +127,12 @@ pnpm --filter @pg-access/example-supabase generate:db
 ```
 
 Both write a timestamped `supabase/migrations/<timestamp>_pg_access.sql` via
-[`@pg-access/cli`](../../packages/cli). Apply the drop-and-recreate one with
-`supabase db reset`; apply a diffed one with `supabase migration up`, which
-keeps existing data.
+[`@pg-access/cli`](../../packages/cli), and update the snapshot. Apply it
+with `supabase migration up`, which keeps existing data. The snapshot only
+knows what pg-access generated, so it can't see a policy changed in the
+Supabase dashboard; `check` and `generate:db` can. If the snapshot gets out
+of step with a database that matches the config, `pnpm --filter
+@pg-access/example-supabase baseline` rewrites it.
 
 The `generate:db` diff normalizes the config's policies through PostgreSQL
 itself, inside a transaction that is always rolled back, so it needs
