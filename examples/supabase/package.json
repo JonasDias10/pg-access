@@ -9,6 +9,7 @@
     "generate": "pg-access generate",
     "generate:db": "node --env-file=.env node_modules/.bin/pg-access generate",
     "check": "node --env-file=.env node_modules/.bin/pg-access check",
+    "baseline": "node --env-file=.env node_modules/.bin/pg-access baseline",
     "dev": "tsx --env-file=.env src/server.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",

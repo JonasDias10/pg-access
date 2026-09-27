@@ -11,6 +11,7 @@
     "migration:revert": "pnpm typeorm migration:revert",
     "generate": "pg-access generate --format typeorm",
     "generate:db": "pg-access generate --format typeorm --database-url ${DATABASE_URL:-postgres://pgaccess:pgaccess@localhost:54329/pg_access_test}",
+    "baseline": "pg-access baseline --database-url ${DATABASE_URL:-postgres://pgaccess:pgaccess@localhost:54329/pg_access_test}",
     "check": "pg-access check --database-url ${DATABASE_URL:-postgres://pgaccess:pgaccess@localhost:54329/pg_access_test}",
     "demo": "tsx src/demo.ts",
     "typecheck": "tsc --noEmit",

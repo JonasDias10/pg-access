@@ -34,9 +34,12 @@ pgaccess.config.ts (DSL)
   queries.
 - [`src/demo.ts`](src/demo.ts): two users and an admin reading and writing
   notes through repositories.
+- [`pgaccess.snapshot.json`](pgaccess.snapshot.json): written by
+  `pg-access generate`, what it diffs the next change against.
 - [`test/integration/`](test/integration): runs the migrations through
   TypeORM, checks each user sees only what the config allows, that
-  `pg-access check` finds no drift, and that every migration reverts.
+  `pg-access check` finds no drift, that the snapshot matches the config,
+  and that every migration reverts.
 
 ## Run it
 
@@ -69,17 +72,23 @@ isn't set.
 Edit `pgaccess.config.ts`, then:
 
 ```bash
-pnpm check         # what drifted from the database?
-pnpm generate:db   # writes a new PgAccess migration with only the drift
+pnpm generate      # a new PgAccess migration with only what changed
 pnpm migration:run
 ```
 
-`generate:db` diffs against the live database, so the new migration's
-`up()` holds only `ALTER POLICY` / `CREATE POLICY` / `DROP POLICY` for what
-changed, and its `down()` puts back each policy exactly as it was before
-(the definitions are read from `pg_policies`). `pnpm generate`, with no
-database, re-creates every policy and its `down()` can only drop them; use
-it for the very first migration or when no database is reachable.
+`generate` needs no database: it diffs the config against
+[pgaccess.snapshot.json](pgaccess.snapshot.json), the policies of the last
+migration it wrote, and updates it. The new migration's `up()` holds only
+`ALTER POLICY` / `CREATE POLICY` / `DROP POLICY` for what changed, and its
+`down()` puts back each policy as the snapshot had it.
+
+With the database running, `pnpm check` reports whether it really matches
+the config, and `pnpm generate:db` diffs against it instead of the
+snapshot, which also catches changes made outside migrations. Its `down()`
+restores each policy from `pg_policies`, and turns RLS back off on tables
+that had it off. If the snapshot is ever out of step with a database that
+does match the config (a merge conflict on it, say), `pnpm baseline`
+rewrites it.
 
 ## Using this in your own project
 
