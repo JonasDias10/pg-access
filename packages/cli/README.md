@@ -37,6 +37,13 @@ rolled back) so PostgreSQL can normalize the config's policies for a
 reliable comparison, which needs a role allowed to create policies on the
 target tables.
 
+`--format typeorm` writes a TypeORM migration class
+(`src/migrations/<timestamp>-PgAccess.ts` by default) instead of a `.sql`
+file, with a `down()` for `typeorm migration:revert`. With `--database-url`
+the `down()` restores every policy and the RLS state exactly as they were;
+without it, it can only drop what `up()` created. See
+[@pg-access/typeorm](https://github.com/JonasDias10/pg-access/tree/main/packages/typeorm).
+
 `check` connects to a live database and compares it against the config,
 reporting **missing** (declared, not applied yet), **changed** (applied,
 but the config no longer matches), and **orphaned** (applied and

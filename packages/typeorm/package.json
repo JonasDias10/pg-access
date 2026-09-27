@@ -1,14 +1,14 @@
 {
-  "name": "@pg-access/cli",
-  "version": "0.1.0",
-  "description": "Command-line interface for pg-access: generates PostgreSQL RLS migrations from a pgaccess.config file, and checks a live database for drift.",
+  "name": "@pg-access/typeorm",
+  "version": "0.0.0",
+  "description": "Writes pg-access RLS policies as TypeORM migration classes, with an up() and a down() that restores the previous policies.",
   "license": "MIT",
   "author": "pg-access contributors",
-  "homepage": "https://github.com/JonasDias10/pg-access/tree/main/packages/cli#readme",
+  "homepage": "https://github.com/JonasDias10/pg-access/tree/main/packages/typeorm#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/JonasDias10/pg-access.git",
-    "directory": "packages/cli"
+    "directory": "packages/typeorm"
   },
   "bugs": {
     "url": "https://github.com/JonasDias10/pg-access/issues"
@@ -21,8 +21,7 @@
     "authorization",
     "policy",
     "migration",
-    "supabase",
-    "cli"
+    "typeorm"
   ],
   "type": "module",
   "engines": {
@@ -31,12 +30,16 @@
   "publishConfig": {
     "access": "public"
   },
-  "bin": {
-    "pg-access": "./bin/pg-access.js"
+  "main": "./build/index.js",
+  "types": "./build/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./build/index.d.ts",
+      "default": "./build/index.js"
+    }
   },
   "files": [
     "build",
-    "bin",
     "src",
     "LICENSE",
     "README.md"
@@ -46,20 +49,14 @@
     "prepack": "pnpm build",
     "clean": "rm -rf build *.tsbuildinfo",
     "test": "vitest run test/unit",
-    "test:integration": "vitest run test/integration --no-file-parallelism",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."
   },
   "dependencies": {
     "@pg-access/core": "workspace:*",
-    "@pg-access/postgres": "workspace:*",
-    "@pg-access/typeorm": "workspace:*",
-    "jiti": "2.7.0",
-    "pg": "8.23.0"
+    "@pg-access/postgres": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "26.2.0",
-    "@types/pg": "8.23.1",
     "typescript": "6.0.3",
     "vitest": "4.1.11"
   }

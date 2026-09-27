@@ -117,4 +117,30 @@ describe("runGenerate with databaseUrl against a real PostgreSQL database", () =
     expect(third.filePath).toBeNull();
     expect(third.changes.every((change) => change.kind === "noop")).toBe(true);
   });
+
+  it("--format typeorm puts the diff in up() and what undoes it in down()", async () => {
+    await writeConfig(
+      `{ cli_generate_target: { rows: { select: publicAccess(), delete: publicAccess() } } }`,
+    );
+    const first = await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
+    if (first.filePath === null) throw new Error("expected a first migration");
+    await pool.query(await readFile(first.filePath, "utf8"));
+
+    await writeConfig(`{ cli_generate_target: { rows: { select: publicAccess() } } }`);
+    const result = await runGenerate({
+      cwd,
+      format: "typeorm",
+      databaseUrl: connectionString,
+      now: new Date("2026-08-19T14:05:00Z"),
+    });
+    if (result.filePath === null) throw new Error("expected a typeorm migration");
+
+    expect(path.basename(result.filePath)).toBe("1787148300000-PgAccess.ts");
+
+    const [up, down] = result.contents.split("public async down(");
+    expect(up).toContain('drop policy if exists "cli_generate_target_delete"');
+    expect(up).not.toContain("cli_generate_target_select");
+    expect(down).toContain('create policy "cli_generate_target_delete"');
+    expect(down).toContain("for delete");
+  });
 });

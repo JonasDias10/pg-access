@@ -53,6 +53,20 @@ a role allowed to create policies on the target tables.
 npx pg-access generate --database-url postgres://...
 ```
 
+### TypeORM
+
+`--format typeorm` writes a TypeORM migration class instead
+(`src/migrations/<timestamp>-PgAccess.ts` by default), for
+`typeorm migration:run` / `migration:revert`. Its `down()` drops what `up()`
+created; with `--database-url` it also alters changed policies back,
+recreates dropped ones, and turns RLS back off where it was off, so a revert
+restores the database exactly. See
+[examples/typeorm](https://github.com/JonasDias10/pg-access/tree/main/examples/typeorm).
+
+```bash
+npx pg-access generate --format typeorm --database-url postgres://...
+```
+
 ## `check`
 
 Connects to a live database and compares it against the config. Net
@@ -79,13 +93,17 @@ config entirely isn't visible to it yet.
 
 ```text
 pg-access init [--config <path>]
-pg-access generate [--config <path>] [--out <dir>] [--database-url <url>]
+pg-access generate [--config <path>] [--out <dir>] [--format <sql|typeorm>]
+                   [--database-url <url>]
 pg-access check [--config <path>] [--database-url <url>]
 
   --config <path>       Path to the pgaccess config file (default:
                          auto-detected, or pgaccess.config.ts for init)
   --out <dir>            Directory to write the migration into (generate
-                         only, default: supabase/migrations)
+                         only, default: supabase/migrations, or
+                         src/migrations for --format typeorm)
+  --format <format>      Migration file to write (generate only): sql
+                         (default) or typeorm, a class with up() and down()
   --database-url <url>  Database to diff against (required for check;
                          optional for generate, to emit only what drifted.
                          Default: the DATABASE_URL environment variable)

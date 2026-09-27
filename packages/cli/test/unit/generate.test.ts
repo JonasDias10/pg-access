@@ -74,4 +74,32 @@ export default defineAuth({ projects: { rows: { select: owner("user_id") } } });
       /Config file not found: missing\.config\.ts/,
     );
   });
+
+  it("--format typeorm writes a migration class into src/migrations by default", async () => {
+    await writeFile(
+      path.join(cwd, "pgaccess.config.ts"),
+      `import { defineAuth, owner } from "@pg-access/core";
+export default defineAuth({ projects: { rows: { select: owner("user_id") } } });`,
+    );
+
+    const result = await runGenerate({
+      cwd,
+      format: "typeorm",
+      now: new Date("2026-08-19T14:03:07.123Z"),
+    });
+
+    const expectedPath = path.join(cwd, "src", "migrations", "1787148187123-PgAccess.ts");
+    expect(result.filePath).toBe(expectedPath);
+    const written = await readFile(expectedPath, "utf8");
+    expect(written).toContain("export class PgAccess1787148187123 implements MigrationInterface");
+    expect(written).toContain('create policy "projects_select"');
+    expect(written).toContain("public async down(queryRunner: QueryRunner)");
+    expect(written).toBe(result.contents);
+  });
+
+  it("rejects an unknown --format before touching the config", async () => {
+    await expect(runGenerate({ cwd, format: "prisma" })).rejects.toThrow(
+      /Unknown --format "prisma"\. Expected one of: sql, typeorm\./,
+    );
+  });
 });

@@ -9,7 +9,8 @@ const HELP = `pg-access - generate PostgreSQL RLS migrations from a pgaccess.con
 
 Usage:
   pg-access init [--config <path>]
-  pg-access generate [--config <path>] [--out <dir>] [--database-url <url>]
+  pg-access generate [--config <path>] [--out <dir>] [--format <sql|typeorm>]
+                     [--database-url <url>]
   pg-access check [--config <path>] [--database-url <url>]
 
 Commands:
@@ -23,7 +24,11 @@ Options:
                          auto-detected pgaccess.config.{ts,mts,js,mjs,cjs}
                          in the current directory)
   --out <dir>            Directory to write the migration into (generate
-                         only, default: supabase/migrations)
+                         only, default: supabase/migrations, or
+                         src/migrations for --format typeorm)
+  --format <format>      Migration file to write (generate only):
+                         sql (default) for a plain .sql file, or typeorm
+                         for a TypeORM migration class with up() and down()
   --database-url <url>  Database to diff against (required for check;
                          optional for generate, to emit only what drifted -
                          ALTER for changed policies, DROP for removed ones,
@@ -88,6 +93,7 @@ export async function main(argv: readonly string[]): Promise<number> {
     options: {
       config: { type: "string" },
       out: { type: "string" },
+      format: { type: "string" },
       "database-url": { type: "string" },
     },
   });
@@ -146,6 +152,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       cwd: process.cwd(),
       config: values.config,
       out: values.out,
+      format: values.format,
       databaseUrl: values["database-url"],
     });
 
