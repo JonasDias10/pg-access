@@ -1,6 +1,6 @@
 {
   "name": "@pg-access/testing",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Helpers for testing PostgreSQL Row-Level Security policies against a real database: run a query as a given role/JWT claims, inside an auto-rolled-back transaction.",
   "license": "MIT",
   "author": "pg-access contributors",

@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.2.0 - 2026-09-27
+
+`@pg-access/postgres` and `@pg-access/cli` 0.2.0, `@pg-access/testing` 0.1.1 (dependency update only), and the first release of `@pg-access/typeorm` (0.1.0). `@pg-access/core` is unchanged at 0.1.0. Each package's own `CHANGELOG.md` has the details.
+
+### Added
+
+- `@pg-access/typeorm` and `pg-access generate --format typeorm`: the policies as a TypeORM migration class, applied with `typeorm migration:run` and reverted with `migration:revert`. `examples/typeorm` shows a full project.
+- `compile()` and `planPolicyChanges()` return a `down` that undoes their statements. Against a live database it restores altered and dropped policies from `pg_policies` and turns RLS back off on tables that had it off.
+- `pg-access generate` without a database now emits only what changed, by diffing against `pgaccess.snapshot.json`, which it keeps next to the config (`planSnapshotChanges()` in `@pg-access/postgres`). With no snapshot yet it re-emits every policy as before and creates one.
+- `pg-access baseline --database-url` records the snapshot from a live database that matches the config.
+
+### Changed
+
+- `pg-access generate` without a database no longer always writes a migration: once a snapshot exists, an unchanged config writes nothing.
+
 ## 0.1.0 - 2026-08-26
 
 ### Added

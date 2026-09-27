@@ -1,6 +1,6 @@
 {
   "name": "@pg-access/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Command-line interface for pg-access: generates PostgreSQL RLS migrations from a pgaccess.config file, and checks a live database for drift.",
   "license": "MIT",
   "author": "pg-access contributors",
