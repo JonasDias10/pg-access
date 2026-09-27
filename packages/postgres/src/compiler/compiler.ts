@@ -3,7 +3,10 @@ import type { Dialect } from "../dialect/postgres.js";
 import { postgresDialect } from "../dialect/postgres.js";
 import { diffPolicies } from "../diff/diff-policies.js";
 import type { ManagedPolicy } from "../introspect/list-managed-policies.js";
+import type { Rollback } from "../migrations/rollback.js";
+import { renderRollback } from "../migrations/rollback.js";
 import { quoteIdent } from "./identifiers.js";
+import type { CompiledPolicy } from "./policies.js";
 import {
   compilePolicy,
   renderCreatePolicy,
@@ -30,6 +33,15 @@ export interface CompileResult {
   readonly sql: string;
   /** Each individual SQL statement, in execution order. */
   readonly statements: readonly string[];
+  /**
+   * What undoes `statements`, for migration formats with a `down()`. With no
+   * `existingPolicies` it can only drop every policy `statements` created,
+   * so rolling back a regenerated migration removes the previous version of
+   * each policy instead of restoring it; pass `existingPolicies` (or use
+   * `planPolicyChanges()`) for a `down` that puts them back. RLS is left
+   * enabled either way, since `compile()` can't know it was off before.
+   */
+  readonly down: Rollback;
 }
 
 /**
@@ -59,6 +71,12 @@ export interface CompileResult {
 export function compile(auth: AuthNode, options: CompileOptions = {}): CompileResult {
   const dialect = options.dialect ?? postgresDialect;
   const statements: string[] = [];
+  const existingByName = new Map(
+    (options.existingPolicies ?? []).map((policy) => [policy.name, policy]),
+  );
+  const created: CompiledPolicy[] = [];
+  const replaced: ManagedPolicy[] = [];
+  const dropped: ManagedPolicy[] = [];
 
   for (const table of auth.tables) {
     if (table.rowPolicies.length === 0) {
@@ -71,6 +89,13 @@ export function compile(auth: AuthNode, options: CompileOptions = {}): CompileRe
       const compiled = compilePolicy(table.name, rowPolicy, dialect);
       statements.push(renderDropPolicyIfExists(compiled));
       statements.push(renderCreatePolicy(compiled));
+
+      const previous = existingByName.get(compiled.name);
+      if (previous === undefined) {
+        created.push(compiled);
+      } else {
+        replaced.push(previous);
+      }
     }
   }
 
@@ -78,11 +103,17 @@ export function compile(auth: AuthNode, options: CompileOptions = {}): CompileRe
     const { orphaned } = diffPolicies(auth, options.existingPolicies);
     for (const policy of orphaned) {
       statements.push(renderDropPolicy(policy));
+
+      const previous = existingByName.get(policy.name);
+      if (previous !== undefined) {
+        dropped.push(previous);
+      }
     }
   }
 
   return {
     sql: statements.length > 0 ? `${statements.join("\n\n")}\n` : "",
     statements,
+    down: renderRollback({ created, replaced, dropped, enabledRls: [] }),
   };
 }

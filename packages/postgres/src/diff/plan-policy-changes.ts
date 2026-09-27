@@ -21,6 +21,8 @@ import {
   listManagedPolicies,
   toManagedPolicy,
 } from "../introspect/list-managed-policies.js";
+import type { Rollback } from "../migrations/rollback.js";
+import { renderRollback } from "../migrations/rollback.js";
 
 /**
  * - `create`: declared in the config, not applied yet.
@@ -44,6 +46,13 @@ export interface PolicyChangePlan {
   readonly statements: readonly string[];
   /** `statements` joined for writing straight into a migration file. `""` when there is nothing to do. */
   readonly sql: string;
+  /**
+   * What undoes `statements`, for migration formats with a `down()`: drops
+   * what was created, alters what was altered back to its applied
+   * definition, recreates what was dropped, and turns RLS back off on tables
+   * that had it off before. Empty exactly when `statements` is.
+   */
+  readonly down: Rollback;
 }
 
 export interface PlanPolicyChangesOptions {
@@ -69,20 +78,23 @@ function rolesEqual(a: readonly string[], b: readonly string[]): boolean {
   return sortedA.every((role, index) => role === sortedB[index]);
 }
 
+/** Which of `tables` exist, mapped to whether RLS is currently enabled on each. */
 async function selectExistingTables(
   session: PgQueryable,
   tables: readonly string[],
-): Promise<Set<string>> {
+): Promise<Map<string, boolean>> {
   if (tables.length === 0) {
-    return new Set();
+    return new Map();
   }
 
   const result = await session.query(
-    "select tablename from pg_tables where schemaname = 'public' and tablename = any($1)",
+    "select tablename, rowsecurity from pg_tables where schemaname = 'public' and tablename = any($1)",
     [tables],
   );
 
-  return new Set((result.rows as PgTableRow[]).map((row) => row.tablename));
+  return new Map(
+    (result.rows as PgTableRow[]).map((row) => [row.tablename, row.rowsecurity === true]),
+  );
 }
 
 /**
@@ -247,7 +259,43 @@ export async function planPolicyChanges(
     changes,
     statements,
     sql: statements.length > 0 ? `${statements.join("\n\n")}\n` : "",
+    down: planRollback(changes, liveTables, existingByName),
   };
+}
+
+/**
+ * The inverse of {@link renderPlan}, from the same `changes`. A table only
+ * gets its RLS turned back off when `renderPlan` turned it on (it had a
+ * `create` or `alter`) and it was off before, including a table that didn't
+ * exist yet: the migration creating it runs its own `down` after this one.
+ */
+function planRollback(
+  changes: readonly PolicyChange[],
+  liveTables: ReadonlyMap<string, boolean>,
+  existingByName: ReadonlyMap<string, ManagedPolicy>,
+): Rollback {
+  const created: PolicyChange[] = [];
+  const replaced: ManagedPolicy[] = [];
+  const dropped: ManagedPolicy[] = [];
+  const enabledRls = new Set<string>();
+
+  for (const change of changes) {
+    const applied = existingByName.get(change.name);
+
+    if (change.kind === "create") {
+      created.push(change);
+    } else if (change.kind === "alter" && applied !== undefined) {
+      replaced.push(applied);
+    } else if (change.kind === "drop" && applied !== undefined) {
+      dropped.push(applied);
+    }
+
+    if ((change.kind === "create" || change.kind === "alter") && !liveTables.get(change.table)) {
+      enabledRls.add(change.table);
+    }
+  }
+
+  return renderRollback({ created, replaced, dropped, enabledRls: [...enabledRls] });
 }
 
 function renderPlan(
