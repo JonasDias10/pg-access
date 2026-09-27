@@ -102,4 +102,96 @@ export default defineAuth({ projects: { rows: { select: owner("user_id") } } });
       /Unknown --format "prisma"\. Expected one of: sql, typeorm\./,
     );
   });
+
+  describe("snapshot", () => {
+    const writeConfig = (rows: string) =>
+      writeFile(
+        path.join(cwd, "pgaccess.config.ts"),
+        `import { defineAuth, owner, publicAccess } from "@pg-access/core";
+export default defineAuth({ projects: { rows: ${rows} } });`,
+      );
+
+    it("with no snapshot yet, re-emits every policy and creates the snapshot next to the config", async () => {
+      await writeConfig(`{ select: owner("user_id") }`);
+
+      const result = await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
+
+      expect(result.diffedAgainst).toBe("none");
+      expect(result.contents).toContain('drop policy if exists "projects_select"');
+      expect(result.snapshotPath).toBe(path.join(cwd, "pgaccess.snapshot.json"));
+      expect(result.snapshotWritten).toBe(true);
+      const snapshot = JSON.parse(await readFile(result.snapshotPath, "utf8"));
+      expect(snapshot.policies.map((policy: { name: string }) => policy.name)).toEqual([
+        "projects_select",
+      ]);
+    });
+
+    it("writes no migration and leaves the snapshot alone when nothing changed", async () => {
+      await writeConfig(`{ select: owner("user_id") }`);
+      await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
+
+      const result = await runGenerate({ cwd, now: new Date("2026-08-19T14:05:00Z") });
+
+      expect(result.diffedAgainst).toBe("snapshot");
+      expect(result.filePath).toBeNull();
+      expect(result.snapshotWritten).toBe(false);
+      expect(result.changes).toEqual([
+        { table: "projects", operation: "select", name: "projects_select", kind: "noop" },
+      ]);
+    });
+
+    it("emits only what changed since the snapshot, then records the new state", async () => {
+      await writeConfig(`{ select: owner("user_id"), delete: owner("user_id") }`);
+      await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
+
+      await writeConfig(`{ select: publicAccess(), delete: owner("user_id") }`);
+      const result = await runGenerate({ cwd, now: new Date("2026-08-19T14:05:00Z") });
+
+      expect(result.contents).toContain('alter policy "projects_select"');
+      expect(result.contents).not.toContain("create policy");
+      expect(result.contents).not.toContain("projects_delete");
+      expect(result.snapshotWritten).toBe(true);
+
+      const again = await runGenerate({ cwd, now: new Date("2026-08-19T14:07:00Z") });
+      expect(again.filePath).toBeNull();
+    });
+
+    it("gives --format typeorm a down() that restores the snapshot's previous policy", async () => {
+      await writeConfig(`{ select: owner("user_id") }`);
+      await runGenerate({ cwd, now: new Date("2026-08-19T14:03:07Z") });
+
+      await writeConfig(`{ select: owner("owner_id") }`);
+      const result = await runGenerate({
+        cwd,
+        format: "typeorm",
+        now: new Date("2026-08-19T14:05:00Z"),
+      });
+
+      const [up, down] = result.contents.split("public async down(");
+      expect(up).toContain('"owner_id" = (select auth.uid())');
+      expect(down).toContain('alter policy "projects_select"');
+      expect(down).toContain('"user_id" = (select auth.uid())');
+    });
+
+    it("reads and writes an explicit --snapshot path", async () => {
+      await writeConfig(`{ select: owner("user_id") }`);
+
+      const result = await runGenerate({
+        cwd,
+        snapshot: "db/pg-access.json",
+        now: new Date("2026-08-19T14:03:07Z"),
+      });
+
+      expect(result.snapshotPath).toBe(path.join(cwd, "db", "pg-access.json"));
+    });
+
+    it("refuses to diff against a snapshot it can't read", async () => {
+      await writeConfig(`{ select: owner("user_id") }`);
+      await writeFile(path.join(cwd, "pgaccess.snapshot.json"), '{ "version": 99 }');
+
+      await expect(runGenerate({ cwd })).rejects.toThrow(
+        /pgaccess\.snapshot\.json: Unsupported pg-access snapshot version 99.*pg-access baseline/,
+      );
+    });
+  });
 });

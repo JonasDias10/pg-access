@@ -39,19 +39,46 @@ CLI's own naming convention).
 npx pg-access generate
 ```
 
-Without `--database-url` it has nothing to diff against, so it re-emits
-every policy as `drop policy if exists` + `create policy`. Pass
-`--database-url` (or set `DATABASE_URL`) and it diffs against that live
-database: an unchanged policy is left out, a drifted one becomes an `ALTER
-POLICY`, and a removed one becomes a `DROP`. If nothing has drifted, no
-migration file is written. Nothing is executed against the database
-directly; the diff opens one always-rolled-back transaction so PostgreSQL
-can normalize the config's policies for a reliable comparison, which needs
-a role allowed to create policies on the target tables.
+It only emits what changed: an unchanged policy is left out, a changed one
+becomes an `ALTER POLICY`, a new one a `CREATE POLICY` and a removed one a
+`DROP`. If nothing changed, no migration file is written. What it diffs
+against:
+
+- **The snapshot** (the default). `generate` keeps `pgaccess.snapshot.json`
+  next to the config, recording the policies of the last migration it
+  wrote, and diffs the config against it. No database needed, so it works
+  offline and in CI. Commit the snapshot with the migration.
+- **A live database**, with `--database-url` (or `DATABASE_URL`). The
+  authoritative diff: it sees what's really applied, including changes made
+  by hand. Nothing is executed against the database directly; the diff
+  opens one always-rolled-back transaction so PostgreSQL can normalize the
+  config's policies for a reliable comparison, which needs a role allowed
+  to create policies on the target tables. It updates the snapshot too.
+- **Nothing**, the first time, when there's no snapshot yet: every policy
+  is re-emitted as `drop policy if exists` + `create policy`, which applies
+  cleanly whatever the database already has, and the snapshot is created.
 
 ```bash
+npx pg-access generate
 npx pg-access generate --database-url postgres://...
 ```
+
+### The snapshot
+
+The snapshot is a claim about the database, not the database: it can't
+see a policy changed by hand, a migration that was never applied, or one
+edited after it was generated. That's what `check` against a live database
+is for. Two differences in what an offline diff emits follow from that:
+every `CREATE POLICY` is preceded by `drop policy if exists`, so a policy
+that exists anyway doesn't fail the migration, and a TypeORM `down()` never
+turns RLS back off, since the snapshot doesn't know it was off before.
+
+The file is deterministic JSON (sorted, stable field order, formatted the
+way Prettier would), so it only changes when the policies do. If two
+branches both run `generate`, the snapshot conflicts on merge; that's the
+signal. Resolve it by taking either side and running `generate` again
+(the guarded creates make re-emitting the other branch's changes
+harmless), or, once both migrations are applied somewhere, with `baseline`.
 
 ### TypeORM
 
@@ -65,6 +92,17 @@ restores the database exactly. See
 
 ```bash
 npx pg-access generate --format typeorm --database-url postgres://...
+```
+
+## `baseline`
+
+Records the snapshot from a live database, for a project whose database
+already has its policies (adopting snapshots) or whose snapshot no longer
+matches it. It first checks the database matches the config exactly, the
+same comparison `check` makes, and writes nothing when it doesn't:
+
+```bash
+npx pg-access baseline --database-url postgres://...
 ```
 
 ## `check`
@@ -94,8 +132,9 @@ config entirely isn't visible to it yet.
 ```text
 pg-access init [--config <path>]
 pg-access generate [--config <path>] [--out <dir>] [--format <sql|typeorm>]
-                   [--database-url <url>]
+                   [--database-url <url>] [--snapshot <path>]
 pg-access check [--config <path>] [--database-url <url>]
+pg-access baseline [--config <path>] [--database-url <url>] [--snapshot <path>]
 
   --config <path>       Path to the pgaccess config file (default:
                          auto-detected, or pgaccess.config.ts for init)
@@ -104,7 +143,10 @@ pg-access check [--config <path>] [--database-url <url>]
                          src/migrations for --format typeorm)
   --format <format>      Migration file to write (generate only): sql
                          (default) or typeorm, a class with up() and down()
-  --database-url <url>  Database to diff against (required for check;
-                         optional for generate, to emit only what drifted.
-                         Default: the DATABASE_URL environment variable)
+  --database-url <url>  Database to diff against (required for check and
+                         baseline; optional for generate, which otherwise
+                         diffs against the snapshot. Default: the
+                         DATABASE_URL environment variable)
+  --snapshot <path>      Snapshot file (generate and baseline only,
+                         default: pgaccess.snapshot.json next to the config)
 ```

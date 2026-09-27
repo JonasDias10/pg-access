@@ -71,6 +71,7 @@ yarn add -D @pg-access/cli
 ```bash
 npx pg-access init      # scaffolds pgaccess.config.ts
 npx pg-access generate  # writes supabase/migrations/<timestamp>_pg_access.sql
+                        # and pgaccess.snapshot.json; commit both
 ```
 
 ## A complete, runnable example

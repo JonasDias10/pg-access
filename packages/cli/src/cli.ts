@@ -1,6 +1,7 @@
 import type { PolicyChange, PolicyRef } from "@pg-access/postgres";
 import path from "node:path";
 import { parseArgs } from "node:util";
+import { BaselineDriftError, runBaseline } from "./commands/baseline.js";
 import { runCheck } from "./commands/check.js";
 import { runGenerate } from "./commands/generate.js";
 import { runInit } from "./commands/init.js";
@@ -10,14 +11,19 @@ const HELP = `pg-access - generate PostgreSQL RLS migrations from a pgaccess.con
 Usage:
   pg-access init [--config <path>]
   pg-access generate [--config <path>] [--out <dir>] [--format <sql|typeorm>]
-                     [--database-url <url>]
+                     [--database-url <url>] [--snapshot <path>]
   pg-access check [--config <path>] [--database-url <url>]
+  pg-access baseline [--config <path>] [--database-url <url>] [--snapshot <path>]
 
 Commands:
   init      Scaffold a starter pgaccess.config.ts in the current directory
-  generate  Compile the config into a timestamped PostgreSQL migration
+  generate  Compile the config into a timestamped PostgreSQL migration,
+            with only what changed since the last snapshot (or since the
+            live database, with --database-url), and update the snapshot
   check     Compare the config against a live database and report drift
             (read-only; never modifies the database)
+  baseline  Record the snapshot from a live database that already matches
+            the config (adopting snapshots, or fixing a stale one)
 
 Options:
   --config <path>       Path to the pgaccess config file (default:
@@ -29,11 +35,12 @@ Options:
   --format <format>      Migration file to write (generate only):
                          sql (default) for a plain .sql file, or typeorm
                          for a TypeORM migration class with up() and down()
-  --database-url <url>  Database to diff against (required for check;
-                         optional for generate, to emit only what drifted -
-                         ALTER for changed policies, DROP for removed ones,
-                         nothing for unchanged. Default: the DATABASE_URL
-                         environment variable)
+  --database-url <url>  Database to diff against (required for check and
+                         baseline; optional for generate, which otherwise
+                         diffs against the snapshot. Default: the
+                         DATABASE_URL environment variable)
+  --snapshot <path>      Snapshot file (generate and baseline only,
+                         default: pgaccess.snapshot.json next to the config)
   -h, --help             Show this help message
   -v, --version          Show the CLI version
 `;
@@ -82,7 +89,12 @@ export async function main(argv: readonly string[]): Promise<number> {
     return 0;
   }
 
-  if (command !== "generate" && command !== "init" && command !== "check") {
+  if (
+    command !== "generate" &&
+    command !== "init" &&
+    command !== "check" &&
+    command !== "baseline"
+  ) {
     console.error(`Unknown command: ${command}\n`);
     console.log(HELP);
     return 1;
@@ -95,6 +107,7 @@ export async function main(argv: readonly string[]): Promise<number> {
       out: { type: "string" },
       format: { type: "string" },
       "database-url": { type: "string" },
+      snapshot: { type: "string" },
     },
   });
 
@@ -148,30 +161,68 @@ export async function main(argv: readonly string[]): Promise<number> {
       return 1;
     }
 
+    if (command === "baseline") {
+      const result = await runBaseline({
+        cwd: process.cwd(),
+        config: values.config,
+        databaseUrl: values["database-url"],
+        snapshot: values.snapshot,
+      });
+
+      const snapshot = path.relative(process.cwd(), result.snapshotPath);
+      console.log(
+        result.snapshotWritten
+          ? `Wrote ${snapshot}: the database matches the config.`
+          : `${snapshot} is already up to date: the database matches the config.`,
+      );
+      return 0;
+    }
+
     const result = await runGenerate({
       cwd: process.cwd(),
       config: values.config,
       out: values.out,
       format: values.format,
       databaseUrl: values["database-url"],
+      snapshot: values.snapshot,
     });
 
+    const snapshot = path.relative(process.cwd(), result.snapshotPath);
+
     if (result.filePath === null) {
-      console.log("No changes: the database already matches the config.");
-      return 0;
+      console.log(
+        result.diffedAgainst === "database"
+          ? "No changes: the database already matches the config."
+          : `No changes: the config still matches ${snapshot}.`,
+      );
+    } else {
+      console.log(`Wrote ${path.relative(process.cwd(), result.filePath)}`);
+
+      const summary = summarizeChanges(result.changes);
+
+      if (summary !== null) {
+        console.log(summary);
+      }
+      if (result.diffedAgainst === "none") {
+        console.log("No snapshot yet, so every policy was re-emitted.");
+      }
     }
 
-    console.log(`Wrote ${path.relative(process.cwd(), result.filePath)}`);
-
-    const summary = summarizeChanges(result.changes);
-
-    if (summary !== null) {
-      console.log(summary);
+    if (result.snapshotWritten) {
+      console.log(`Updated ${snapshot}`);
     }
 
     return 0;
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
+
+    if (error instanceof BaselineDriftError) {
+      console.error("");
+      for (const change of error.drift) {
+        console.error(`  - ${change.table}.${change.name} (${change.kind})`);
+      }
+    }
+
     return 1;
   }
 }
