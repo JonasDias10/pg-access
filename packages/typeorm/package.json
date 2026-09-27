@@ -1,6 +1,6 @@
 {
   "name": "@pg-access/typeorm",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Writes pg-access RLS policies as TypeORM migration classes, with an up() and a down() that restores the previous policies.",
   "license": "MIT",
   "author": "pg-access contributors",

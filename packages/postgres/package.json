@@ -1,6 +1,6 @@
 {
   "name": "@pg-access/postgres",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Compiles @pg-access/core's AST into real PostgreSQL Row-Level Security SQL (CREATE POLICY, GRANT, migrations).",
   "license": "MIT",
   "author": "pg-access contributors",
